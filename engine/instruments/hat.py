@@ -295,7 +295,12 @@ class HatEngine:
         if pink.shape[-1] != num_samples:
             pink = pink[:num_samples] if pink.shape[-1] >= num_samples else torch.nn.functional.pad(pink, (0, num_samples - pink.shape[-1]))
         pink = pink.to(metal_layer.dtype)
-        air_cut = 7000.0
+        # Use spec hpf_hz for air if available, otherwise legacy
+        air_hpf_hz = get_param(params, "hat.hpf_hz", None)
+        if air_hpf_hz is not None:
+            air_cut = air_hpf_hz
+        else:
+            air_cut = 7000.0
         air_layer = Filter.highpass(pink, self.sample_rate, air_cut) * (sheen * 0.5 + 0.2)
         air_layer = air_layer.float()
 
