@@ -228,6 +228,35 @@ async def propose(instrument: str):
     return params
 
 from engine.export.exporter import Exporter
+from engine.params.schema import PARAM_SCHEMA, DEFAULT_PRESET
+
+@app.get("/schema/{instrument}")
+async def get_schema(instrument: str):
+    """
+    Returns parameter schema for the specified instrument.
+    Includes macro params, macros (Kick2-style), layer gains, ADSR, and advanced params.
+    """
+    if instrument not in PARAM_SCHEMA:
+        return {"status": "error", "message": f"Invalid instrument: {instrument}"}
+    
+    return {
+        "instrument": instrument,
+        "schema": PARAM_SCHEMA[instrument]
+    }
+
+@app.get("/defaults/{instrument}")
+async def get_defaults(instrument: str):
+    """
+    Returns default preset for the specified instrument.
+    Includes macro params, macros (Kick2-style), layer gains, ADSR defaults, and advanced params.
+    """
+    if instrument not in DEFAULT_PRESET:
+        return {"status": "error", "message": f"Invalid instrument: {instrument}"}
+    
+    return {
+        "instrument": instrument,
+        "defaults": DEFAULT_PRESET[instrument]
+    }
 
 @app.post("/export/kit")
 async def export_kit(kit_data: dict):
