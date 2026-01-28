@@ -16,6 +16,7 @@ import torchaudio
 import numpy as np
 
 from engine.instruments.hat import HatEngine, resolve_hat_spec_params
+from engine.qc.qc import analyze
 
 # Output directory
 OUTPUT_DIR = Path("renders/hat_spec")
@@ -76,7 +77,7 @@ def _energy_below_hz(audio: torch.Tensor, sample_rate: int, cutoff_hz: float) ->
     return float(energy_below / total_energy) * 100.0
 
 
-def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
+def render_preset(preset_name: str, preset_params: dict, seed: int = 42, qc: bool = False):
     """Render a single preset and save WAV."""
     engine = HatEngine(sample_rate=48000)
     
@@ -99,6 +100,7 @@ def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
     
     # Render audio
     audio = engine.render(resolved, seed=seed)
+    audio_1d = audio.view(-1)  # 1D for QC
     audio = audio.view(1, -1)  # (1, samples) for torchaudio
     
     # Metrics
@@ -110,6 +112,21 @@ def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
     # Print resolved params (show key mappings)
     print(f"\n=== {preset_name} ===")
     print(f"Peak: {peak:.4f}, RMS: {rms:.4f}, Centroid: {centroid:.1f} Hz, Energy below 3kHz: {energy_below_3k:.1f}%")
+    
+    # QC analysis
+    if qc:
+        qc_result = analyze(audio_1d, 48000, "hat")
+        print(f"QC Status: {qc_result['status']}")
+        if qc_result['failures']:
+            print("  FAILURES:")
+            for f in qc_result['failures']:
+                print(f"    - {f}")
+        if qc_result['warnings']:
+            print("  WARNINGS:")
+            for w in qc_result['warnings']:
+                print(f"    - {w}")
+        if qc_result['status'] == "FAIL":
+            return False  # Indicate failure
     print("Resolved params (key mappings):")
     if "hat" in resolved:
         hat = resolved["hat"]
@@ -221,9 +238,14 @@ def render_choke_demo():
 
 def main():
     """Load presets and render each one, plus choke demo."""
+    import sys
+    
+    # Check for qc flag
+    qc = "--qc" in sys.argv or "-q" in sys.argv
+    
     if not PRESETS_FILE.exists():
         print(f"Error: {PRESETS_FILE} not found")
-        return
+        return 1
     
     with open(PRESETS_FILE, "r") as f:
         data = json.load(f)
@@ -231,9 +253,13 @@ def main():
     presets = data.get("presets", {})
     if not presets:
         print("No presets found in file")
-        return
+        return 1
     
     print(f"Rendering {len(presets)} hat spec presets to {DATE_DIR}")
+    if qc:
+        print("QC analysis enabled")
+    
+    failures = []
     
     # Render default spec (baseline)
     default_spec = {
@@ -251,16 +277,24 @@ def main():
             }
         }
     }
-    render_preset("Default Spec", default_spec, seed=42)
+    if render_preset("Default Spec", default_spec, seed=42, qc=qc) is False:
+        failures.append("Default Spec")
     
     # Render each preset
     for preset_name, preset_params in presets.items():
-        render_preset(preset_name, preset_params, seed=42)
+        if render_preset(preset_name, preset_params, seed=42, qc=qc) is False:
+            failures.append(preset_name)
     
-    # Render choke demo
+    # Render choke demo (no QC for demo)
     render_choke_demo()
     
     print(f"\nAll renders complete. Output directory: {DATE_DIR}")
+    
+    if failures:
+        print(f"\nQC FAILURES in {len(failures)} preset(s): {', '.join(failures)}")
+        return 1
+    
+    return 0
 
 
 if __name__ == "__main__":

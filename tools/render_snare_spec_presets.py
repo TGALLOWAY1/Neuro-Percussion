@@ -15,6 +15,7 @@ import torchaudio
 import numpy as np
 
 from engine.instruments.snare import SnareEngine, resolve_snare_spec_params
+from engine.qc.qc import analyze
 
 # Output directory
 OUTPUT_DIR = Path("renders/snare_spec")
@@ -80,7 +81,7 @@ def _energy_ratio(audio: torch.Tensor, sample_rate: int, low_hz: float, high_hz:
     return float(energy_low / energy_high)
 
 
-def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
+def render_preset(preset_name: str, preset_params: dict, seed: int = 42, qc: bool = False):
     """Render a single preset and save WAV."""
     engine = SnareEngine(sample_rate=48000)
     
@@ -103,6 +104,7 @@ def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
     
     # Render audio
     audio = engine.render(resolved, seed=seed)
+    audio_1d = audio.view(-1)  # 1D for QC
     audio = audio.view(1, -1)  # (1, samples) for torchaudio
     
     # Metrics
@@ -114,6 +116,21 @@ def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
     # Print resolved params (show key mappings)
     print(f"\n=== {preset_name} ===")
     print(f"Peak: {peak:.4f}, RMS: {rms:.4f}, Centroid: {centroid:.1f} Hz, Energy ratio (150-250Hz / 300-600Hz): {energy_ratio:.3f}")
+    
+    # QC analysis
+    if qc:
+        qc_result = analyze(audio_1d, 48000, "snare")
+        print(f"QC Status: {qc_result['status']}")
+        if qc_result['failures']:
+            print("  FAILURES:")
+            for f in qc_result['failures']:
+                print(f"    - {f}")
+        if qc_result['warnings']:
+            print("  WARNINGS:")
+            for w in qc_result['warnings']:
+                print(f"    - {w}")
+        if qc_result['status'] == "FAIL":
+            return False  # Indicate failure
     print("Resolved params (key mappings):")
     if "snare" in resolved:
         snare = resolved["snare"]
@@ -144,9 +161,14 @@ def render_preset(preset_name: str, preset_params: dict, seed: int = 42):
 
 def main():
     """Load presets and render each one."""
+    import sys
+    
+    # Check for qc flag
+    qc = "--qc" in sys.argv or "-q" in sys.argv
+    
     if not PRESETS_FILE.exists():
         print(f"Error: {PRESETS_FILE} not found")
-        return
+        return 1
     
     with open(PRESETS_FILE, "r") as f:
         data = json.load(f)
@@ -154,9 +176,13 @@ def main():
     presets = data.get("presets", {})
     if not presets:
         print("No presets found in file")
-        return
+        return 1
     
     print(f"Rendering {len(presets)} snare spec presets to {DATE_DIR}")
+    if qc:
+        print("QC analysis enabled")
+    
+    failures = []
     
     # Render default spec (baseline)
     default_spec = {
@@ -175,13 +201,21 @@ def main():
             }
         }
     }
-    render_preset("Default Spec", default_spec, seed=42)
+    if render_preset("Default Spec", default_spec, seed=42, qc=qc) is False:
+        failures.append("Default Spec")
     
     # Render each preset
     for preset_name, preset_params in presets.items():
-        render_preset(preset_name, preset_params, seed=42)
+        if render_preset(preset_name, preset_params, seed=42, qc=qc) is False:
+            failures.append(preset_name)
     
     print(f"\nAll renders complete. Output directory: {DATE_DIR}")
+    
+    if failures:
+        print(f"\nQC FAILURES in {len(failures)} preset(s): {', '.join(failures)}")
+        return 1
+    
+    return 0
 
 
 if __name__ == "__main__":
