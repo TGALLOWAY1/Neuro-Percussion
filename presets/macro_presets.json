@@ -1,0 +1,336 @@
+{
+  "kick": {
+    "tight": {
+      "kick": {
+        "macros": {
+          "length_ms": 300.0,
+          "attack_ms": 0.0,
+          "decay_ms": 120.0,
+          "click": 0.7,
+          "click_tight": 0.9,
+          "punch": 0.6,
+          "pitch_drop": 0.4,
+          "room": 0.1,
+          "tone": 0.5
+        }
+      }
+    },
+    "long_808": {
+      "kick": {
+        "macros": {
+          "length_ms": 800.0,
+          "attack_ms": 0.0,
+          "decay_ms": 400.0,
+          "click": 0.2,
+          "click_tight": 0.3,
+          "punch": 0.3,
+          "pitch_drop": 0.7,
+          "room": 0.2,
+          "tone": 0.4
+        }
+      }
+    },
+    "punchy": {
+      "kick": {
+        "macros": {
+          "length_ms": 400.0,
+          "attack_ms": 0.0,
+          "decay_ms": 150.0,
+          "click": 0.8,
+          "click_tight": 0.7,
+          "punch": 0.9,
+          "pitch_drop": 0.6,
+          "room": 0.2,
+          "tone": 0.5
+        }
+      }
+    },
+    "roomy": {
+      "kick": {
+        "macros": {
+          "length_ms": 600.0,
+          "attack_ms": 0.0,
+          "decay_ms": 250.0,
+          "click": 0.4,
+          "click_tight": 0.5,
+          "punch": 0.4,
+          "pitch_drop": 0.5,
+          "room": 0.7,
+          "tone": 0.5
+        }
+      }
+    },
+    "soft": {
+      "kick": {
+        "macros": {
+          "length_ms": 500.0,
+          "attack_ms": 2.0,
+          "decay_ms": 200.0,
+          "click": 0.2,
+          "click_tight": 0.4,
+          "punch": 0.2,
+          "pitch_drop": 0.3,
+          "room": 0.3,
+          "tone": 0.4
+        }
+      }
+    },
+    "hard": {
+      "kick": {
+        "macros": {
+          "length_ms": 350.0,
+          "attack_ms": 0.0,
+          "decay_ms": 100.0,
+          "click": 0.95,
+          "click_tight": 0.95,
+          "punch": 0.95,
+          "pitch_drop": 0.5,
+          "room": 0.1,
+          "tone": 0.6
+        }
+      }
+    },
+    "subby": {
+      "kick": {
+        "macros": {
+          "length_ms": 600.0,
+          "attack_ms": 0.0,
+          "decay_ms": 350.0,
+          "click": 0.1,
+          "click_tight": 0.3,
+          "punch": 0.3,
+          "pitch_drop": 0.8,
+          "room": 0.2,
+          "tone": 0.3
+        }
+      }
+    },
+    "clicky": {
+      "kick": {
+        "macros": {
+          "length_ms": 300.0,
+          "attack_ms": 0.0,
+          "decay_ms": 80.0,
+          "click": 0.95,
+          "click_tight": 0.95,
+          "punch": 0.7,
+          "pitch_drop": 0.3,
+          "room": 0.05,
+          "tone": 0.7
+        }
+      }
+    }
+  },
+  "snare": {
+    "tight": {
+      "snare": {
+        "macros": {
+          "length_ms": 300.0,
+          "attack_ms": 0.0,
+          "body": 0.3,
+          "tension": 0.7,
+          "crack": 0.6,
+          "wires": 0.2,
+          "room": 0.0
+        }
+      }
+    },
+    "ringy": {
+      "snare": {
+        "macros": {
+          "length_ms": 600.0,
+          "attack_ms": 0.0,
+          "body": 0.8,
+          "tension": 0.6,
+          "crack": 0.4,
+          "wires": 0.3,
+          "room": 0.1
+        }
+      }
+    },
+    "fat": {
+      "snare": {
+        "macros": {
+          "length_ms": 500.0,
+          "attack_ms": 0.0,
+          "body": 0.9,
+          "tension": 0.3,
+          "crack": 0.3,
+          "wires": 0.2,
+          "room": 0.2
+        }
+      }
+    },
+    "crisp": {
+      "snare": {
+        "macros": {
+          "length_ms": 350.0,
+          "attack_ms": 0.0,
+          "body": 0.4,
+          "tension": 0.9,
+          "crack": 0.9,
+          "wires": 0.3,
+          "room": 0.0
+        }
+      }
+    },
+    "ghosty_wires": {
+      "snare": {
+        "macros": {
+          "length_ms": 500.0,
+          "attack_ms": 0.0,
+          "body": 0.3,
+          "tension": 0.5,
+          "crack": 0.2,
+          "wires": 0.85,
+          "room": 0.0
+        }
+      }
+    },
+    "big_room": {
+      "snare": {
+        "macros": {
+          "length_ms": 700.0,
+          "attack_ms": 0.0,
+          "body": 0.6,
+          "tension": 0.5,
+          "crack": 0.5,
+          "wires": 0.4,
+          "room": 0.8
+        }
+      }
+    },
+    "dry": {
+      "snare": {
+        "macros": {
+          "length_ms": 400.0,
+          "attack_ms": 0.0,
+          "body": 0.5,
+          "tension": 0.6,
+          "crack": 0.7,
+          "wires": 0.3,
+          "room": 0.0
+        }
+      }
+    },
+    "wet": {
+      "snare": {
+        "macros": {
+          "length_ms": 600.0,
+          "attack_ms": 0.0,
+          "body": 0.7,
+          "tension": 0.4,
+          "crack": 0.4,
+          "wires": 0.5,
+          "room": 0.6
+        }
+      }
+    }
+  },
+  "hat": {
+    "tight_closed": {
+      "hat": {
+        "macros": {
+          "length_ms": 200.0,
+          "attack_ms": 0.0,
+          "tightness": 0.95,
+          "sheen": 0.2,
+          "dirt": 0.1,
+          "chick": 0.6,
+          "open": 0.0
+        }
+      }
+    },
+    "open_wash": {
+      "hat": {
+        "macros": {
+          "length_ms": 800.0,
+          "attack_ms": 0.0,
+          "tightness": 0.1,
+          "sheen": 0.7,
+          "dirt": 0.2,
+          "chick": 0.3,
+          "open": 0.9
+        }
+      }
+    },
+    "crisp": {
+      "hat": {
+        "macros": {
+          "length_ms": 400.0,
+          "attack_ms": 0.0,
+          "tightness": 0.7,
+          "sheen": 0.8,
+          "dirt": 0.3,
+          "chick": 0.8,
+          "open": 0.2
+        }
+      }
+    },
+    "dark": {
+      "hat": {
+        "macros": {
+          "length_ms": 500.0,
+          "attack_ms": 0.0,
+          "tightness": 0.5,
+          "sheen": 0.1,
+          "dirt": 0.4,
+          "chick": 0.3,
+          "open": 0.3
+        }
+      }
+    },
+    "shimmery": {
+      "hat": {
+        "macros": {
+          "length_ms": 600.0,
+          "attack_ms": 0.0,
+          "tightness": 0.3,
+          "sheen": 0.95,
+          "dirt": 0.1,
+          "chick": 0.4,
+          "open": 0.5
+        }
+      }
+    },
+    "punchy": {
+      "hat": {
+        "macros": {
+          "length_ms": 300.0,
+          "attack_ms": 0.0,
+          "tightness": 0.8,
+          "sheen": 0.5,
+          "dirt": 0.5,
+          "chick": 0.9,
+          "open": 0.1
+        }
+      }
+    },
+    "smooth": {
+      "hat": {
+        "macros": {
+          "length_ms": 500.0,
+          "attack_ms": 1.0,
+          "tightness": 0.4,
+          "sheen": 0.6,
+          "dirt": 0.1,
+          "chick": 0.2,
+          "open": 0.4
+        }
+      }
+    },
+    "gritty": {
+      "hat": {
+        "macros": {
+          "length_ms": 450.0,
+          "attack_ms": 0.0,
+          "tightness": 0.6,
+          "sheen": 0.4,
+          "dirt": 0.8,
+          "chick": 0.5,
+          "open": 0.2
+        }
+      }
+    }
+  }
+}
