@@ -6,7 +6,7 @@ from typing import Dict, Any, Literal
 
 # Type definitions
 ParamType = Literal["float", "int", "bool"]
-ParamGroup = Literal["macro", "layer_gain", "layer_adsr", "advanced"]
+ParamGroup = Literal["macro", "macros", "layer_gain", "layer_adsr", "advanced"]
 
 # Schema entry structure: type, default, min, max, group, description
 ParamSchemaEntry = Dict[str, Any]
@@ -61,6 +61,34 @@ PARAM_SCHEMA: Dict[str, Dict[str, ParamSchemaEntry]] = {
         ),
         "blend": _make_param(
             "float", 0.3, 0.0, 1.0, "macro", "Room layer mix level"
+        ),
+        # Kick2-style macro controls (Kick2 control surface)
+        "kick.macros.length_ms": _make_param(
+            "float", 500.0, 200.0, 1000.0, "macros", "Overall length scaling (ms)"
+        ),
+        "kick.macros.attack_ms": _make_param(
+            "float", 0.0, 0.0, 5.0, "macros", "Global attack time (ms, usually 0-5ms)"
+        ),
+        "kick.macros.decay_ms": _make_param(
+            "float", 180.0, 50.0, 500.0, "macros", "Body decay target (ms)"
+        ),
+        "kick.macros.click": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Click loudness + FM depth"
+        ),
+        "kick.macros.click_tight": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Click decay / FM envelope time (tighter = shorter)"
+        ),
+        "kick.macros.punch": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Transient emphasis; also affects pitch drop curvature"
+        ),
+        "kick.macros.pitch_drop": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Amount of pitch envelope (drop depth)"
+        ),
+        "kick.macros.room": _make_param(
+            "float", 0.3, 0.0, 1.0, "macros", "Room layer level + distance feel"
+        ),
+        "kick.macros.tone": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Post tilt / de-emphasis (optional)"
         ),
         # Advanced: knock freq (not in PARAM_SPACES but exists)
         "kick.knock.freq_norm": _make_param(
@@ -160,6 +188,28 @@ PARAM_SCHEMA: Dict[str, Dict[str, ParamSchemaEntry]] = {
         ),
         "body": _make_param(
             "float", 0.5, 0.0, 1.0, "macro", "Shell body depth and feedback"
+        ),
+        # Kick2-style macro controls (Snare control surface)
+        "snare.macros.length_ms": _make_param(
+            "float", 500.0, 200.0, 1000.0, "macros", "Overall length scaling (ms)"
+        ),
+        "snare.macros.attack_ms": _make_param(
+            "float", 0.0, 0.0, 10.0, "macros", "Global attack time (ms)"
+        ),
+        "snare.macros.body": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Shell amount + shell decay"
+        ),
+        "snare.macros.tension": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Brightness on hit; LPF/feedback mapping"
+        ),
+        "snare.macros.crack": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Exciter brightness/level"
+        ),
+        "snare.macros.wires": _make_param(
+            "float", 0.4, 0.0, 1.0, "macros", "Wire gain + wire decay"
+        ),
+        "snare.macros.room": _make_param(
+            "float", 0.0, 0.0, 1.0, "macros", "Room layer level"
         ),
         # Per-layer gain_db
         "snare.exciter_body.gain_db": _make_param(
@@ -272,6 +322,28 @@ PARAM_SCHEMA: Dict[str, Dict[str, ParamSchemaEntry]] = {
         "color": _make_param(
             "float", 0.5, 0.0, 1.0, "macro", "Metal layer base frequency (300-500 Hz)"
         ),
+        # Kick2-style macro controls (Hat control surface)
+        "hat.macros.length_ms": _make_param(
+            "float", 500.0, 200.0, 1000.0, "macros", "Overall length (closed/open feel)"
+        ),
+        "hat.macros.attack_ms": _make_param(
+            "float", 0.0, 0.0, 5.0, "macros", "Global attack time (ms)"
+        ),
+        "hat.macros.tightness": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Shorter decays + higher damping"
+        ),
+        "hat.macros.sheen": _make_param(
+            "float", 0.4, 0.0, 1.0, "macros", "Air layer + HF tilt"
+        ),
+        "hat.macros.dirt": _make_param(
+            "float", 0.2, 0.0, 1.0, "macros", "Safe saturation amount"
+        ),
+        "hat.macros.chick": _make_param(
+            "float", 0.5, 0.0, 1.0, "macros", "Chick transient level"
+        ),
+        "hat.macros.open": _make_param(
+            "float", 0.0, 0.0, 1.0, "macros", "Crossfade closed->open envelope model (optional)"
+        ),
         # Advanced: metal ratio jitter
         "hat.metal.ratio_jitter": _make_param(
             "float", 0.1, 0.0, 0.5, "advanced", "Metal layer harmonic ratio jitter"
@@ -357,8 +429,20 @@ DEFAULT_PRESET: Dict[str, Dict[str, Any]] = {
         "room_air": 0.3,
         "distance_ms": 20.0,
         "blend": 0.3,
-        # Advanced
+        # Advanced + Kick2-style macro defaults
         "kick": {
+            # Kick2-style macro defaults (realistic/conservative)
+            "macros": {
+                "length_ms": 500.0,
+                "attack_ms": 0.0,
+                "decay_ms": 180.0,
+                "click": 0.5,
+                "click_tight": 0.5,
+                "punch": 0.5,
+                "pitch_drop": 0.5,
+                "room": 0.3,
+                "tone": 0.5,
+            },
             "knock": {
                 "freq_norm": 0.5,
                 "decay_ms": 50.0,
@@ -412,8 +496,18 @@ DEFAULT_PRESET: Dict[str, Dict[str, Any]] = {
         "wire": 0.4,
         "crack": 0.5,
         "body": 0.5,
-        # Per-layer gain_db + ADSR
+        # Per-layer gain_db + ADSR + Kick2-style macro defaults
         "snare": {
+            # Kick2-style macro defaults (realistic/conservative)
+            "macros": {
+                "length_ms": 500.0,
+                "attack_ms": 0.0,
+                "body": 0.5,
+                "tension": 0.5,
+                "crack": 0.5,
+                "wires": 0.4,
+                "room": 0.0,
+            },
             "exciter_body": {
                 "gain_db": -200.0,
                 "mute": True,
@@ -472,8 +566,18 @@ DEFAULT_PRESET: Dict[str, Dict[str, Any]] = {
         "sheen": 0.4,
         "dirt": 0.2,
         "color": 0.5,
-        # Advanced
+        # Advanced + Kick2-style macro defaults
         "hat": {
+            # Kick2-style macro defaults (realistic/conservative)
+            "macros": {
+                "length_ms": 500.0,
+                "attack_ms": 0.0,
+                "tightness": 0.5,
+                "sheen": 0.4,
+                "dirt": 0.2,
+                "chick": 0.5,
+                "open": 0.0,
+            },
             "metal": {
                 "ratio_jitter": 0.1,
                 "gain_db": 0.0,
