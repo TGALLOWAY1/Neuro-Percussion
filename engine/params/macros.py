@@ -43,25 +43,33 @@ def _clamp(value: float, min_val: float, max_val: float) -> float:
     return max(min_val, min(max_val, float(value)))
 
 
-def apply_macros(instrument: str, params: dict) -> dict:
+def apply_macros(instrument: str, params: dict, original_user_params: dict = None) -> dict:
     """
     Convert macro knobs to implied advanced params.
     Only applies if params contain any {instrument}.macros.* keys.
     User-provided advanced params take precedence (not overwritten).
+    
+    Args:
+        instrument: "kick", "snare", or "hat"
+        params: Params dict (may include defaults) - used to read macro values
+        original_user_params: Original user params (before merging defaults) - used to check what user provided
     
     Returns dict of implied params that should be merged with user params.
     """
     if not _has_macros(instrument, params):
         return {}
     
+    # Use original_user_params if provided, otherwise use params (backward compat)
+    user_params = original_user_params if original_user_params is not None else params
+    
     implied = {}
     
     if instrument == "kick":
-        implied.update(_apply_kick_macros(params))
+        implied.update(_apply_kick_macros(params, user_params))
     elif instrument == "snare":
-        implied.update(_apply_snare_macros(params))
+        implied.update(_apply_snare_macros(params, user_params))
     elif instrument == "hat":
-        implied.update(_apply_hat_macros(params))
+        implied.update(_apply_hat_macros(params, user_params))
     
     return implied
 
@@ -78,7 +86,7 @@ def _has_user_param(params: dict, key: str) -> bool:
     return True
 
 
-def _apply_kick_macros(params: dict) -> dict:
+def _apply_kick_macros(params: dict, user_params: dict) -> dict:
     """Apply kick macro mappings."""
     implied = {}
     
@@ -105,11 +113,11 @@ def _apply_kick_macros(params: dict) -> dict:
     if "amp" not in implied["kick"]["sub"]:
         implied["kick"]["sub"]["amp"] = {}
     
-    if not _has_user_param(params, "kick.sub.amp.decay_ms"):
+    if not _has_user_param(user_params, "kick.sub.amp.decay_ms"):
         implied["kick"]["sub"]["amp"]["decay_ms"] = _clamp(decay_ms * length_scale, 50.0, 500.0)
-    if not _has_user_param(params, "kick.sub.amp.attack_ms"):
+    if not _has_user_param(user_params, "kick.sub.amp.attack_ms"):
         implied["kick"]["sub"]["amp"]["attack_ms"] = _clamp(attack_ms, 0.0, 50.0)
-    if not _has_user_param(params, "kick.sub.amp.release_ms"):
+    if not _has_user_param(user_params, "kick.sub.amp.release_ms"):
         implied["kick"]["sub"]["amp"]["release_ms"] = _clamp(10.0 * length_scale, 5.0, 100.0)
     
     # Click layer
@@ -118,10 +126,10 @@ def _apply_kick_macros(params: dict) -> dict:
     if "amp" not in implied["kick"]["click"]:
         implied["kick"]["click"]["amp"] = {}
     
-    if not _has_user_param(params, "kick.click.gain_db"):
+    if not _has_user_param(user_params, "kick.click.gain_db"):
         # click: 0.0 -> -12dB, 0.5 -> -6dB, 1.0 -> 0dB
         implied["kick"]["click"]["gain_db"] = _clamp((click - 0.5) * 12.0, -12.0, 6.0)
-    if get_param(params, "kick.click.amp.decay_ms") is None:
+    if not _has_user_param(user_params, "kick.click.amp.decay_ms"):
         # click_tight: 0.0 -> 20ms, 0.5 -> 6ms, 1.0 -> 2ms
         implied["kick"]["click"]["amp"]["decay_ms"] = _clamp(20.0 - (click_tight * 18.0), 2.0, 20.0)
     if not _has_user_param(params, "kick.click.amp.attack_ms"):
@@ -181,7 +189,7 @@ def _apply_kick_macros(params: dict) -> dict:
     return implied
 
 
-def _apply_snare_macros(params: dict) -> dict:
+def _apply_snare_macros(params: dict, user_params: dict) -> dict:
     """Apply snare macro mappings."""
     implied = {}
     
@@ -206,7 +214,7 @@ def _apply_snare_macros(params: dict) -> dict:
     if "amp" not in implied["snare"]["shell"]:
         implied["snare"]["shell"]["amp"] = {}
     
-    if not _has_user_param(params, "snare.shell.gain_db"):
+    if not _has_user_param(user_params, "snare.shell.gain_db"):
         # body: 0.0 -> -6dB, 0.5 -> 0dB, 1.0 -> +3dB
         implied["snare"]["shell"]["gain_db"] = _clamp((body - 0.5) * 9.0, -6.0, 3.0)
     if not _has_user_param(params, "snare.shell.amp.decay_ms"):
@@ -265,7 +273,7 @@ def _apply_snare_macros(params: dict) -> dict:
     return implied
 
 
-def _apply_hat_macros(params: dict) -> dict:
+def _apply_hat_macros(params: dict, user_params: dict) -> dict:
     """Apply hat macro mappings."""
     implied = {}
     
@@ -289,7 +297,7 @@ def _apply_hat_macros(params: dict) -> dict:
     if "amp" not in implied["hat"]["metal"]:
         implied["hat"]["metal"]["amp"] = {}
     
-    if not _has_user_param(params, "hat.metal.amp.decay_ms"):
+    if not _has_user_param(user_params, "hat.metal.amp.decay_ms"):
         # tightness shortens decays: 0.0 -> 200ms, 0.5 -> 70ms, 1.0 -> 20ms
         base_decay = 200.0 - (tightness * 180.0)
         implied["hat"]["metal"]["amp"]["decay_ms"] = _clamp(base_decay * length_scale, 20.0, 200.0)
