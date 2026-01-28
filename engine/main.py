@@ -28,19 +28,30 @@ async def health_check():
 
 from engine.instruments.kick import KickEngine
 from engine.core.io import AudioIO
-from fastapi import Response
+from fastapi import Response, Query
 from engine.params.resolve import resolve_params
+from engine.params.clamp import clamp_params
 import base64
 
 @app.post("/generate/kick")
-async def generate_kick(params: dict):
+async def generate_kick(
+    params: dict,
+    mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
+):
     """
     Generates a kick drum.
     Returns JSON with base64-encoded audio and resolved_params.
+    
+    Query params:
+    - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
     # Extract seed if present (don't mutate original params)
     params_copy = params.copy()
     seed = params_copy.pop("seed", 0)
+    
+    # Apply realistic mode clamps if requested
+    if mode == "realistic":
+        params_copy = clamp_params("kick", params_copy)
     
     # Resolve params (deep-merge with defaults)
     resolved = resolve_params("kick", params_copy)
@@ -62,13 +73,23 @@ from engine.instruments.snare import SnareEngine
 from engine.instruments.hat import HatEngine
 
 @app.post("/generate/snare")
-async def generate_snare(params: dict):
+async def generate_snare(
+    params: dict,
+    mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
+):
     """
     Generates a snare drum.
     Returns JSON with base64-encoded audio and resolved_params.
+    
+    Query params:
+    - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
     params_copy = params.copy()
     seed = params_copy.pop("seed", 0)
+    
+    # Apply realistic mode clamps if requested
+    if mode == "realistic":
+        params_copy = clamp_params("snare", params_copy)
     
     resolved = resolve_params("snare", params_copy)
     
@@ -82,13 +103,23 @@ async def generate_snare(params: dict):
     }
 
 @app.post("/generate/hat")
-async def generate_hat(params: dict):
+async def generate_hat(
+    params: dict,
+    mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
+):
     """
     Generates a hi-hat.
     Returns JSON with base64-encoded audio and resolved_params.
+    
+    Query params:
+    - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
     params_copy = params.copy()
     seed = params_copy.pop("seed", 0)
+    
+    # Apply realistic mode clamps if requested
+    if mode == "realistic":
+        params_copy = clamp_params("hat", params_copy)
     
     resolved = resolve_params("hat", params_copy)
     
@@ -137,18 +168,29 @@ samplers = {
 # Param Spaces (macro controls only; used by proposer/mutator).
 # Advanced params (per-layer gain_db/mute, ADSR, etc.) are manual/UI-only for now
 # and are not in PARAM_SPACES to avoid exploding the search space.
+# Ranges tightened to avoid harsh synthetic regions.
 PARAM_SPACES = {
     'kick': {
-        'punch_decay': (0.1, 1.0),
-        'click_amount': (0.0, 1.0),
-        'click_snap': (0.0, 1.0),
-        'room_tone_freq': (50.0, 300.0),
-        'room_air': (0.0, 1.0),
-        'distance_ms': (0.0, 50.0),
-        'blend': (0.0, 1.0)
+        'punch_decay': (0.15, 0.9),      # Tightened: avoid too short/long extremes
+        'click_amount': (0.0, 0.85),     # Tightened: high click can be harsh
+        'click_snap': (0.0, 0.85),       # Tightened: extreme snap sounds synthetic
+        'room_tone_freq': (80.0, 250.0), # Tightened: avoid very low/high room tones
+        'room_air': (0.0, 0.8),         # Tightened: high air can be too noisy
+        'distance_ms': (5.0, 40.0),     # Tightened: avoid 0ms (no delay) and very long
+        'blend': (0.1, 0.7)              # Tightened: avoid 0 (no room) and too much room
     },
-    'snare': {'tone': (0, 1), 'wire': (0, 1), 'crack': (0, 1), 'body': (0, 1)},
-    'hat': {'tightness': (0, 1), 'sheen': (0, 1), 'dirt': (0, 1), 'color': (0, 1)}
+    'snare': {
+        'tone': (0.2, 0.9),              # Tightened: avoid extreme frequencies
+        'wire': (0.1, 0.85),             # Tightened: extremes sound synthetic
+        'crack': (0.1, 0.85),            # Tightened: high crack can be harsh
+        'body': (0.2, 0.9)               # Tightened: avoid extreme body
+    },
+    'hat': {
+        'tightness': (0.1, 0.95),        # Tightened: avoid fully open/closed extremes
+        'sheen': (0.0, 0.85),            # Tightened: high sheen can be harsh
+        'dirt': (0.0, 0.7),              # Tightened: high dirt is too harsh
+        'color': (0.2, 0.9)              # Tightened: avoid extreme color shifts
+    }
 }
 
 @app.post("/feedback")
