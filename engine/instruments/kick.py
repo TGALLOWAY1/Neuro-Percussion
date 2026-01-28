@@ -422,14 +422,14 @@ class KickEngine:
         eq_scoop_db = get_param(params, "kick.eq.scoop_db", None)
         if eq_scoop_hz is not None and eq_scoop_db is not None and eq_scoop_db < 0:
             # Apply notch filter (scoop)
-            master = Filter.peaking_notch(master, self.sample_rate, eq_scoop_hz, eq_scoop_db, q=1.0)
+            master = Effects.peaking_notch(master, self.sample_rate, eq_scoop_hz, eq_scoop_db, q=1.0)
         
         # ---------- Compressor (post-mix, pre-downsample) ----------
         comp_ratio = get_param(params, "kick.comp.ratio", None)
         comp_attack_ms = get_param(params, "kick.comp.attack_ms", None)
         comp_release_ms = get_param(params, "kick.comp.release_ms", None)
         if comp_ratio is not None and comp_attack_ms is not None and comp_release_ms is not None:
-            master = Filter.compressor(
+            master = Effects.compressor(
                 master, self.sample_rate, comp_ratio, comp_attack_ms, comp_release_ms, threshold_db=-12.0
             )
 
