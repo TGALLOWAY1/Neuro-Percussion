@@ -558,6 +558,19 @@ DEFAULT_PRESET: Dict[str, Dict[str, Any]] = {
                     "release_ms": 0.0,
                 },
             },
+            # Snare spec defaults (mix-ready)
+            "spec": {
+                "tune_hz": 200.0,
+                "tone_decay_ms": 150.0,
+                "pitch_env_st": 12.0,
+                "snare_level": 0.6,
+                "noise_decay_ms": 250.0,
+                "wire_filter_hz": 5000.0,
+                "snap_attack_ms": 1.0,
+                "hardness": 0.5,
+                "box_cut_db": -6.0,
+                "box_cut_hz": 500.0,
+            },
         },
     },
     "hat": {
@@ -611,6 +624,18 @@ DEFAULT_PRESET: Dict[str, Dict[str, Any]] = {
             },
             "dirt": {
                 "legacy_bitcrush": False,
+            },
+            # Hat spec defaults (mix-ready)
+            "spec": {
+                "metal_pitch_hz": 800.0,
+                "dissonance": 0.7,
+                "fm_amount": 0.5,
+                "hpf_hz": 3000.0,
+                "color_hz": 8000.0,
+                "decay_ms": 80.0,
+                "choke_group": True,
+                "is_open": False,
+                "attack_ms": 0.0,
             },
         },
     },
