@@ -29,40 +29,77 @@ async def health_check():
 from engine.instruments.kick import KickEngine
 from engine.core.io import AudioIO
 from fastapi import Response
+from engine.params.resolve import resolve_params
+import base64
 
 @app.post("/generate/kick")
 async def generate_kick(params: dict):
     """
     Generates a kick drum.
+    Returns JSON with base64-encoded audio and resolved_params.
     """
-    # Extract seed if present
-    seed = params.pop("seed", 0) 
+    # Extract seed if present (don't mutate original params)
+    params_copy = params.copy()
+    seed = params_copy.pop("seed", 0)
+    
+    # Resolve params (deep-merge with defaults)
+    resolved = resolve_params("kick", params_copy)
+    
+    # Render audio with resolved params
     engine = KickEngine(sample_rate=48000)
-    audio = engine.render(params, seed=seed)
+    audio = engine.render(resolved, seed=seed)
     
     # Export to bytes
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
     
-    return Response(content=wav_bytes, media_type="audio/wav")
+    # Return JSON with base64 audio and resolved params
+    return {
+        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
+        "resolved_params": resolved,
+    }
 
 from engine.instruments.snare import SnareEngine
 from engine.instruments.hat import HatEngine
 
 @app.post("/generate/snare")
 async def generate_snare(params: dict):
-    seed = params.pop("seed", 0)
+    """
+    Generates a snare drum.
+    Returns JSON with base64-encoded audio and resolved_params.
+    """
+    params_copy = params.copy()
+    seed = params_copy.pop("seed", 0)
+    
+    resolved = resolve_params("snare", params_copy)
+    
     engine = SnareEngine(sample_rate=48000)
-    audio = engine.render(params, seed=seed)
+    audio = engine.render(resolved, seed=seed)
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
-    return Response(content=wav_bytes, media_type="audio/wav")
+    
+    return {
+        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
+        "resolved_params": resolved,
+    }
 
 @app.post("/generate/hat")
 async def generate_hat(params: dict):
-    seed = params.pop("seed", 0)
+    """
+    Generates a hi-hat.
+    Returns JSON with base64-encoded audio and resolved_params.
+    """
+    params_copy = params.copy()
+    seed = params_copy.pop("seed", 0)
+    
+    resolved = resolve_params("hat", params_copy)
+    
     engine = HatEngine(sample_rate=48000)
-    audio = engine.render(params, seed=seed)
+    audio = engine.render(resolved, seed=seed)
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
-    return Response(content=wav_bytes, media_type="audio/wav")
+    
+    return {
+        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
+        "resolved_params": resolved,
+    }
 
 
 # --- ML Globals ---
@@ -97,11 +134,21 @@ samplers = {
     'hat': Sampler(models['hat'])
 }
 
-# Param Spaces
+# Param Spaces (macro controls only; used by proposer/mutator).
+# Advanced params (per-layer gain_db/mute, ADSR, etc.) are manual/UI-only for now
+# and are not in PARAM_SPACES to avoid exploding the search space.
 PARAM_SPACES = {
-    'kick': {'drop': (0,1), 'knock': (0,1), 'punch': (0,1), 'weight': (0,1)},
-    'snare': {'tone': (0,1), 'wire': (0,1), 'crack': (0,1), 'body': (0,1)},
-    'hat': {'tightness': (0,1), 'sheen': (0,1), 'dirt': (0,1), 'color': (0,1)}
+    'kick': {
+        'punch_decay': (0.1, 1.0),
+        'click_amount': (0.0, 1.0),
+        'click_snap': (0.0, 1.0),
+        'room_tone_freq': (50.0, 300.0),
+        'room_air': (0.0, 1.0),
+        'distance_ms': (0.0, 50.0),
+        'blend': (0.0, 1.0)
+    },
+    'snare': {'tone': (0, 1), 'wire': (0, 1), 'crack': (0, 1), 'body': (0, 1)},
+    'hat': {'tightness': (0, 1), 'sheen': (0, 1), 'dirt': (0, 1), 'color': (0, 1)}
 }
 
 @app.post("/feedback")
