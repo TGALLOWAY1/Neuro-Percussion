@@ -1,0 +1,64 @@
+{
+  "presets": {
+    "Tight Closed Hat": {
+      "hat": {
+        "spec": {
+          "metal_pitch_hz": 1000.0,
+          "dissonance": 0.5,
+          "fm_amount": 0.3,
+          "hpf_hz": 4000.0,
+          "color_hz": 10000.0,
+          "decay_ms": 50.0,
+          "choke_group": true,
+          "is_open": false,
+          "attack_ms": 0.0
+        }
+      }
+    },
+    "Open Hat": {
+      "hat": {
+        "spec": {
+          "metal_pitch_hz": 800.0,
+          "dissonance": 0.7,
+          "fm_amount": 0.4,
+          "hpf_hz": 3000.0,
+          "color_hz": 8000.0,
+          "decay_ms": 800.0,
+          "choke_group": true,
+          "is_open": true,
+          "attack_ms": 5.0
+        }
+      }
+    },
+    "Crisp Modern": {
+      "hat": {
+        "spec": {
+          "metal_pitch_hz": 1200.0,
+          "dissonance": 0.6,
+          "fm_amount": 0.5,
+          "hpf_hz": 3500.0,
+          "color_hz": 12000.0,
+          "decay_ms": 70.0,
+          "choke_group": true,
+          "is_open": false,
+          "attack_ms": 0.0
+        }
+      }
+    },
+    "Gritty Lo-Fi": {
+      "hat": {
+        "spec": {
+          "metal_pitch_hz": 600.0,
+          "dissonance": 0.9,
+          "fm_amount": 0.8,
+          "hpf_hz": 2500.0,
+          "color_hz": 6000.0,
+          "decay_ms": 100.0,
+          "choke_group": true,
+          "is_open": false,
+          "attack_ms": 0.0
+        }
+      }
+    }
+  }
+}
