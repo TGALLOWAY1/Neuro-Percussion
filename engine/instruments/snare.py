@@ -304,6 +304,8 @@ class SnareEngine:
             # Use phase accumulator for continuous phase
             phase = torch.cumsum(pitch_env / self.sample_rate, dim=0) * 2 * np.pi
             osc_body = torch.sin(phase)
+            # Apply amplitude decay envelope (similar to legacy)
+            osc_body = (osc_body * torch.exp(-t * 20)).float()
         else:
             # Legacy mode: fixed frequency with exponential decay
             osc_body = Oscillator.triangle(fund_freq, duration, self.sample_rate)
