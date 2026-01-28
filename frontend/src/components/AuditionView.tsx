@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { generateAudio, sendFeedback, proposeParams, exportKit } from "@/lib/api";
 import { WaveformViewer } from "./WaveformViewer";
 import { MacroSlider } from "./MacroSlider";
+import { EnvelopeStrip } from "./envelopes/EnvelopeStrip";
 import { RefreshCw, Play, ThumbsUp, ThumbsDown, Sparkles, Download, Plus, Check } from "lucide-react";
 import { InstrumentType } from "@/types";
+import { getEnvelopeSpec } from "@/audio/params";
+import { mapKickParams, mapSnareParams, mapHatParams } from "@/audio/mapping";
+import { migratePatchToV1, validateCanonicalPatch, type PatchV1 } from "@/audio/patch";
 import clsx from "clsx";
 
 const INSTRUMENTS: InstrumentType[] = ['kick', 'snare', 'hat'];
@@ -51,6 +55,7 @@ const DEFAULT_PARAMS = {
 export default function AuditionView() {
     const [instrument, setInstrument] = useState<InstrumentType>('kick');
     const [params, setParams] = useState<Record<string, number>>(DEFAULT_PARAMS['kick']);
+    const [envelopeParams, setEnvelopeParams] = useState<Record<string, number>>({});
     const [seed, setSeed] = useState(42);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -60,32 +65,131 @@ export default function AuditionView() {
     const [kit, setKit] = useState<Record<string, any>>({});
     const [isExporting, setIsExporting] = useState(false);
 
+    // Debounce timer for real-time preview
+    const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Prevent double-triggering: track last trigger time
+    const lastTriggerTimeRef = useRef<number>(0);
+    const TRIGGER_DEBOUNCE_MS = 50; // Minimum time between triggers
+
     const switchInstrument = (inst: InstrumentType) => {
         setInstrument(inst);
         setParams(DEFAULT_PARAMS[inst]);
+        // Reset envelope params to defaults
+        const spec = getEnvelopeSpec(inst);
+        const defaults: Record<string, number> = {};
+        spec.envelopes.forEach((env) => {
+            env.params.forEach((param) => {
+                defaults[param.id] = param.default;
+            });
+        });
+        setEnvelopeParams(defaults);
         setFeedbackSent(null);
-        // We don't auto-regen here to avoid flashing, we let user trigger or wait?
-        // Actually nice to auto-regen.
-        // Pass the new inst directly to bypass state update lag
-        requestAnimationFrame(() => handleGenerate(inst, DEFAULT_PARAMS[inst]));
+        // Auto-regen with defaults
+        requestAnimationFrame(() => {
+            // Migrate kit patch if exists
+            const kitPatch = kit[inst];
+            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
+            
+            const merged = mergeParams(inst, DEFAULT_PARAMS[inst], defaults, migratedPatch);
+            handleGenerate(inst, merged);
+        });
+    };
+
+    // Merge macro params + envelope params into backend format
+    const mergeParams = (
+        inst: InstrumentType,
+        macroParams: Record<string, number>,
+        envParams: Record<string, number>,
+        patch?: PatchV1
+    ): Record<string, any> => {
+        const merged: Record<string, any> = { ...macroParams };
+
+        // Map envelope params to backend format
+        let mapped: Record<string, any> = {};
+        if (inst === "kick") {
+            mapped = mapKickParams(envParams as any);
+        } else if (inst === "snare") {
+            mapped = mapSnareParams(envParams as any);
+            
+            // Apply repeat mode and room settings for snare
+            const repeatMode = patch?.repeatMode || "oneshot";
+            merged["snare"] = merged["snare"] || {};
+            merged["snare"]["repeatMode"] = repeatMode;
+            
+            // Disable FDN feedback for oneshot mode
+            if (repeatMode === "oneshot") {
+                merged["snare"]["shell"] = merged["snare"]["shell"] || {};
+                merged["snare"]["shell"]["feedback"] = 0.0;
+            }
+            
+            // Room layer control
+            const roomEnabled = patch?.roomEnabled || false;
+            merged["snare"]["room"] = merged["snare"]["room"] || {};
+            merged["snare"]["room"]["enabled"] = roomEnabled;
+            if (!roomEnabled) {
+                merged["snare"]["room"]["mute"] = true;
+                merged["snare"]["room"]["gain_db"] = -200.0;
+            }
+        } else if (inst === "hat") {
+            mapped = mapHatParams(envParams as any);
+        }
+
+        // Deep merge mapped params into merged
+        const deepMerge = (target: any, source: any): any => {
+            const result = { ...target };
+            for (const key in source) {
+                if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
+                    result[key] = deepMerge(result[key] || {}, source[key]);
+                } else {
+                    result[key] = source[key];
+                }
+            }
+            return result;
+        };
+
+        return deepMerge(merged, mapped);
     };
 
     const handleGenerate = async (
         instOverride?: InstrumentType,
-        paramsOverride?: Record<string, number>,
-        seedOverride?: number
+        paramsOverride?: Record<string, any>,
+        seedOverride?: number,
+        skipEnvelopeMerge = false
     ) => {
+        // Prevent double-triggering: check if we triggered recently
+        const now = Date.now();
+        const timeSinceLastTrigger = now - lastTriggerTimeRef.current;
+        if (timeSinceLastTrigger < TRIGGER_DEBOUNCE_MS && !skipEnvelopeMerge) {
+            console.debug(`[SNARE] Skipping trigger (${timeSinceLastTrigger}ms since last, min ${TRIGGER_DEBOUNCE_MS}ms)`);
+            return;
+        }
+        lastTriggerTimeRef.current = now;
+
         const instIdx = instOverride || instrument;
-        const currentParams = paramsOverride || params;
         const currentSeed = seedOverride !== undefined ? seedOverride : seed;
+
+        // Merge params if not already merged
+        let finalParams: Record<string, any>;
+        if (skipEnvelopeMerge && paramsOverride) {
+            finalParams = paramsOverride;
+        } else {
+            const macroP = paramsOverride || params;
+            const envP = envelopeParams;
+            const kitPatch = kit[instIdx];
+            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
+            finalParams = mergeParams(instIdx, macroP, envP, migratedPatch);
+        }
 
         setIsLoading(true);
         setFeedbackSent(null);
         try {
-            const blob = await generateAudio(instIdx, currentParams, currentSeed);
+            const blob = await generateAudio(instIdx, finalParams, currentSeed);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
-            if (paramsOverride) setParams(paramsOverride);
+            if (paramsOverride && !skipEnvelopeMerge) {
+                // Only update macro params if provided
+                setParams(paramsOverride);
+            }
             if (seedOverride !== undefined) setSeed(seedOverride);
         } catch (err) {
             console.error(err);
@@ -96,8 +200,29 @@ export default function AuditionView() {
 
 
     useEffect(() => {
-        handleGenerate();
+        // Initialize envelope params to defaults
+        const spec = getEnvelopeSpec(instrument);
+        const defaults: Record<string, number> = {};
+        spec.envelopes.forEach((env) => {
+            env.params.forEach((param) => {
+                defaults[param.id] = param.default;
+            });
+        });
+        setEnvelopeParams(defaults);
+        
+        // Initial generate
+        const merged = mergeParams(instrument, DEFAULT_PARAMS[instrument], defaults, undefined);
+        handleGenerate(instrument, merged, seed, true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Cleanup debounce timer
+    useEffect(() => {
+        return () => {
+            if (previewTimeoutRef.current) {
+                clearTimeout(previewTimeoutRef.current);
+            }
+        };
     }, []);
 
     const nextSeed = () => {
@@ -127,9 +252,26 @@ export default function AuditionView() {
     };
 
     const addToKit = () => {
+        // Create V1 patch with schema version
+        const patch: PatchV1 = {
+            schemaVersion: 1,
+            params: { ...params },
+            envelopeParams: { ...envelopeParams },
+            seed,
+            // For snare, default to oneshot mode
+            repeatMode: instrument === "snare" ? "oneshot" : undefined,
+            roomEnabled: false, // Default room disabled
+        };
+        
+        // Validate and warn if issues
+        const warnings = validateCanonicalPatch(patch);
+        if (warnings.length > 0) {
+            console.warn("[PATCH] Validation warnings:", warnings);
+        }
+        
         setKit(prev => ({
             ...prev,
-            [instrument]: { params: { ...params }, seed }
+            [instrument]: patch
         }));
     };
 
@@ -156,6 +298,48 @@ export default function AuditionView() {
 
     const updateParam = (key: string, val: number) => {
         setParams(prev => ({ ...prev, [key]: val }));
+        // Trigger real-time preview with debounce
+        if (previewTimeoutRef.current) {
+            clearTimeout(previewTimeoutRef.current);
+        }
+        previewTimeoutRef.current = setTimeout(() => {
+            const updated = { ...params, [key]: val };
+            const kitPatch = kit[instrument];
+            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
+            const merged = mergeParams(instrument, updated, envelopeParams, migratedPatch);
+            handleGenerate(undefined, merged, undefined, true);
+        }, 300); // 300ms debounce
+    };
+
+    const updateEnvelopeParam = (paramId: string, value: number) => {
+        setEnvelopeParams(prev => ({ ...prev, [paramId]: value }));
+        // Trigger real-time preview with debounce
+        if (previewTimeoutRef.current) {
+            clearTimeout(previewTimeoutRef.current);
+        }
+        previewTimeoutRef.current = setTimeout(() => {
+            const updated = { ...envelopeParams, [paramId]: value };
+            const kitPatch = kit[instrument];
+            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
+            const merged = mergeParams(instrument, params, updated, migratedPatch);
+            handleGenerate(undefined, merged, undefined, true);
+        }, 300); // 300ms debounce
+    };
+
+    const resetEnvelope = (envelopeId: string) => {
+        const spec = getEnvelopeSpec(instrument);
+        const envelope = spec.envelopes.find(e => e.id === envelopeId);
+        if (envelope) {
+            const updates: Record<string, number> = {};
+            envelope.params.forEach(param => {
+                updates[param.id] = param.default;
+            });
+            setEnvelopeParams(prev => ({ ...prev, ...updates }));
+            // Trigger preview
+            const updated = { ...envelopeParams, ...updates };
+            const merged = mergeParams(instrument, params, updated);
+            handleGenerate(undefined, merged, undefined, true);
+        }
     };
 
     const inKit = kit[instrument]?.seed === seed;
@@ -235,6 +419,16 @@ export default function AuditionView() {
                             <RefreshCw className="animate-spin text-emerald-500" />
                         </div>
                     )}
+                </div>
+
+                {/* Envelope Strip */}
+                <div className="z-10">
+                    <EnvelopeStrip
+                        spec={getEnvelopeSpec(instrument)}
+                        values={envelopeParams}
+                        onChange={updateEnvelopeParam}
+                        onReset={resetEnvelope}
+                    />
                 </div>
 
                 {/* ML Feedback Actions */}

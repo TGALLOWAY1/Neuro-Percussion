@@ -1,0 +1,156 @@
+/**
+ * Hi-hat envelope parameter specifications.
+ */
+
+import { DrumParamSpec } from "./types";
+
+export const HAT_ENVELOPE_SPEC: DrumParamSpec = {
+    drum: "hat",
+    envelopes: [
+        {
+            id: "amp",
+            label: "AMP",
+            mode: "AD",
+            params: [
+                {
+                    id: "attack_ms",
+                    label: "Attack",
+                    unit: "ms",
+                    min: 0,
+                    max: 3,
+                    step: 0.1,
+                    default: 0.5,
+                },
+                {
+                    id: "decay_ms",
+                    label: "Decay",
+                    unit: "ms",
+                    min: 10,
+                    max: 2500,
+                    step: 10,
+                    default: 90,
+                },
+                {
+                    id: "curve",
+                    label: "Curve",
+                    unit: "x",
+                    min: 0.2,
+                    max: 3.0,
+                    step: 0.1,
+                    default: 1.2,
+                },
+                {
+                    id: "choke",
+                    label: "Choke",
+                    unit: "bool",
+                    min: 0,
+                    max: 1,
+                    step: 1,
+                    default: 1,
+                },
+            ],
+        },
+        {
+            id: "metal",
+            label: "METAL",
+            mode: "NONE",
+            params: [
+                {
+                    id: "metal_amount_pct",
+                    label: "Metal Amount",
+                    unit: "pct",
+                    min: 0,
+                    max: 100,
+                    step: 1,
+                    default: 65,
+                },
+                {
+                    id: "inharmonicity",
+                    label: "Inharmonicity",
+                    unit: "x",
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    default: 0.55,
+                },
+                {
+                    id: "brightness_hz",
+                    label: "Brightness",
+                    unit: "hz",
+                    min: 2000,
+                    max: 16000,
+                    step: 100,
+                    default: 9000,
+                },
+            ],
+        },
+        {
+            id: "noise",
+            label: "NOISE",
+            mode: "NONE",
+            params: [
+                {
+                    id: "noise_amount_pct",
+                    label: "Noise Amount",
+                    unit: "pct",
+                    min: 0,
+                    max: 100,
+                    step: 1,
+                    default: 45,
+                },
+                {
+                    id: "noise_color",
+                    label: "Noise Color",
+                    unit: "x",
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    default: 0.75,
+                },
+                {
+                    id: "hpf_cutoff_hz",
+                    label: "HP Cutoff",
+                    unit: "hz",
+                    min: 2000,
+                    max: 12000,
+                    step: 100,
+                    default: 6000,
+                },
+            ],
+        },
+        {
+            id: "stereo",
+            label: "STEREO",
+            mode: "NONE",
+            params: [
+                {
+                    id: "width_pct",
+                    label: "Width",
+                    unit: "pct",
+                    min: 0,
+                    max: 150,
+                    step: 1,
+                    default: 110,
+                },
+                {
+                    id: "micro_delay_ms",
+                    label: "MicroDelay",
+                    unit: "ms",
+                    min: 0,
+                    max: 20,
+                    step: 0.5,
+                    default: 6,
+                },
+                {
+                    id: "air_pct",
+                    label: "Air",
+                    unit: "pct",
+                    min: 0,
+                    max: 40,
+                    step: 1,
+                    default: 10,
+                },
+            ],
+        },
+    ],
+};

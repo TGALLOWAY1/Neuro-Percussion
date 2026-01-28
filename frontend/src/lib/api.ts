@@ -4,7 +4,7 @@ const API_BASE = "http://localhost:8000";
 
 export async function generateAudio(
     instrument: InstrumentType,
-    params: Record<string, number>,
+    params: Record<string, any>, // Allow nested objects
     seed: number
 ): Promise<Blob> {
     const response = await fetch(`${API_BASE}/generate/${instrument}`, {

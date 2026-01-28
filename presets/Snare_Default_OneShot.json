@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "instrument": "snare",
+  "params": {
+    "tone": 0.5,
+    "wire": 0.4,
+    "crack": 0.5,
+    "body": 0.5
+  },
+  "envelopeParams": {
+    "attack_ms": 1,
+    "decay_ms": 320,
+    "curve": 1.4,
+    "body_pitch_hz": 200,
+    "body_decay_ms": 180,
+    "body_amount_pct": 45,
+    "noise_amount_pct": 55,
+    "noise_decay_ms": 280,
+    "noise_color": 0.6,
+    "noise_band_center_hz": 5000,
+    "noise_band_q": 1.2,
+    "snap_amount_pct": 35,
+    "snap_decay_ms": 10,
+    "snap_tone_hz": 7000
+  },
+  "seed": 42,
+  "repeatMode": "oneshot",
+  "roomEnabled": false,
+  "description": "Default one-shot snare preset with FDN feedback disabled and room layer muted"
+}

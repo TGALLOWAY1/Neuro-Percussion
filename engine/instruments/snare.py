@@ -264,9 +264,15 @@ class SnareEngine:
         num_samples = int(duration * self.sample_rate)
         t = torch.linspace(0, duration, num_samples)
 
+        # DEBUG: Log incoming params
+        logger.debug(f"[SNARE RENDER] Incoming params keys: {list(params.keys())}")
+        logger.debug(f"[SNARE RENDER] Legacy macros: tone={params.get('tone')}, wire={params.get('wire')}, crack={params.get('crack')}, body={params.get('body')}")
+        logger.debug(f"[SNARE RENDER] Nested params: snare={params.get('snare')}")
+
         # Apply spec param mapping if spec params exist
         spec_implied = resolve_snare_spec_params(params)
         if spec_implied:
+            logger.debug(f"[SNARE RENDER] Spec params implied: {spec_implied}")
             # Deep merge spec-implied params into params (user params still win)
             import copy
             def _deep_merge_spec(base: dict, override: dict) -> dict:
@@ -334,6 +340,25 @@ class SnareEngine:
         actual_freqs = fund_freq * pitch_mults
         delay_lens = self.sample_rate / actual_freqs
         feedback_gain = 0.85 + (body_amt * 0.11)
+        
+        # DEBUG: Log FDN settings
+        logger.debug(f"[SNARE RENDER] FDN feedback_gain: {feedback_gain} (body_amt={body_amt})")
+        logger.debug(f"[SNARE RENDER] Delay lengths (samples): {delay_lens.tolist()}")
+        
+        # Check for explicit feedback control
+        explicit_feedback = get_param(params, "snare.shell.feedback", None)
+        if explicit_feedback is not None:
+            feedback_gain = float(explicit_feedback)
+            logger.debug(f"[SNARE RENDER] Using explicit feedback: {feedback_gain}")
+        
+        # Check for repeat mode
+        repeat_mode = get_param(params, "snare.repeatMode", "oneshot")
+        logger.debug(f"[SNARE RENDER] Repeat mode: {repeat_mode}")
+        
+        # For oneshot mode, disable feedback by default
+        if repeat_mode == "oneshot" and explicit_feedback is None:
+            feedback_gain = 0.0
+            logger.debug(f"[SNARE RENDER] Oneshot mode: feedback disabled (was {0.85 + (body_amt * 0.11)})")
 
         # Increased block size for better performance (reduces LPF calls)
         # Original: 32 samples = 6000 LPF calls, New: 1024 samples = ~188 LPF calls
@@ -409,7 +434,15 @@ class SnareEngine:
         wires_out = wires_out.float()
 
         # ---------- Room (optional send from shell) ----------
-        room_out = Filter.lowpass(shell_out, self.sample_rate, 800.0, q=0.707) * 0.15
+        # Check if room is explicitly enabled
+        room_enabled = get_param(params, "snare.room.enabled", False)
+        room_mix = get_param(params, "snare.room.mix", 0.15)
+        logger.debug(f"[SNARE RENDER] Room enabled: {room_enabled}, mix: {room_mix}")
+        
+        if room_enabled:
+            room_out = Filter.lowpass(shell_out, self.sample_rate, 800.0, q=0.707) * room_mix
+        else:
+            room_out = torch.zeros_like(shell_out)  # Disabled by default
         room_out = room_out.float()
 
         # ---------- Per-layer AMP ADSR ----------
@@ -465,6 +498,11 @@ class SnareEngine:
         # Current: wires_out already has wire_amt in it. So we pass wires_layer and default 0 dB; level is baked in.
         # To let fader override we use gain_db 0 and wires_layer has wire_amt baked in. Good.
         master, _ = mixer.mix(params, "snare", default_specs)
+        
+        # DEBUG: Log final layer states
+        logger.debug(f"[SNARE RENDER] Layer mixer applied. Master audio shape: {master.shape}")
+        logger.debug(f"[SNARE RENDER] Room layer gain_db: {get_param(params, 'snare.room.gain_db', -200.0)}")
+        logger.debug(f"[SNARE RENDER] Room layer mute: {get_param(params, 'snare.room.mute', True)}")
 
         # ---------- Box cut notch (post-mix, pre-downsample) ----------
         box_cut_hz = get_param(params, "snare.box_cut.hz", None)
