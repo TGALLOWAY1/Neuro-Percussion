@@ -15,6 +15,149 @@ from engine.core.params import get_param, get_db_gain
 logger = logging.getLogger(__name__)
 
 
+def resolve_kick_spec_params(params: dict) -> dict:
+    """
+    Map kick.spec.* parameters to internal params.
+    Only applies if any kick.spec.* keys exist.
+    User-provided advanced params take precedence (not overwritten).
+    
+    Returns a dict of implied internal params that should be merged with user params.
+    """
+    # Check if spec params exist
+    spec_prefix = "kick.spec."
+    has_spec = any(key.startswith(spec_prefix) for key in params.keys()) or (
+        "kick" in params and isinstance(params.get("kick"), dict) and "spec" in params.get("kick", {})
+    )
+    
+    if not has_spec:
+        return {}
+    
+    implied = {}
+    
+    # Helper to get spec param with default
+    def get_spec(key: str, default: float) -> float:
+        # Try nested: params["kick"]["spec"][key]
+        if "kick" in params and isinstance(params["kick"], dict):
+            if "spec" in params["kick"] and isinstance(params["kick"]["spec"], dict):
+                if key in params["kick"]["spec"]:
+                    try:
+                        return float(params["kick"]["spec"][key])
+                    except (TypeError, ValueError):
+                        pass
+        # Try flat: params["kick.spec.key"]
+        flat_key = f"kick.spec.{key}"
+        val = get_param(params, flat_key, default)
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+    
+    # Get spec values
+    click_level = get_spec("click_level", 0.5)
+    click_attack_ms = get_spec("click_attack_ms", 0.5)
+    click_filter_hz = get_spec("click_filter_hz", 7000.0)
+    hardness = get_spec("hardness", 0.6)
+    pitch_hz = get_spec("pitch_hz", 55.0)
+    pitch_env_semitones = get_spec("pitch_env_semitones", 24.0)
+    pitch_decay_ms = get_spec("pitch_decay_ms", 50.0)
+    amp_decay_ms = get_spec("amp_decay_ms", 350.0)
+    drive_fold = get_spec("drive_fold", 0.0)
+    eq_scoop_hz = get_spec("eq_scoop_hz", 300.0)
+    eq_scoop_db = get_spec("eq_scoop_db", -6.0)
+    global_attack_ms = get_spec("global_attack_ms", 0.0)
+    comp_ratio = get_spec("comp_ratio", 3.0)
+    comp_attack_ms = get_spec("comp_attack_ms", 5.0)
+    comp_release_ms = get_spec("comp_release_ms", 200.0)
+    
+    # Clamp to safe ranges
+    click_level = max(0.0, min(1.0, click_level))
+    click_attack_ms = max(0.0, min(5.0, click_attack_ms))
+    click_filter_hz = max(200.0, min(16000.0, click_filter_hz))
+    hardness = max(0.0, min(1.0, hardness))
+    pitch_hz = max(40.0, min(150.0, pitch_hz))
+    pitch_env_semitones = max(0.0, min(100.0, pitch_env_semitones))
+    pitch_decay_ms = max(10.0, min(300.0, pitch_decay_ms))
+    amp_decay_ms = max(150.0, min(800.0, amp_decay_ms))
+    drive_fold = max(0.0, min(1.0, drive_fold))
+    eq_scoop_hz = max(200.0, min(400.0, eq_scoop_hz))
+    eq_scoop_db = max(-9.0, min(0.0, eq_scoop_db))
+    global_attack_ms = max(0.0, min(10.0, global_attack_ms))
+    comp_ratio = max(1.0, min(4.0, comp_ratio))
+    comp_attack_ms = max(1.0, min(20.0, comp_attack_ms))
+    comp_release_ms = max(50.0, min(400.0, comp_release_ms))
+    
+    # Check if user already provided these params
+    def has_user(key: str) -> bool:
+        keys = key.split(".")
+        current = params
+        for k in keys:
+            if not isinstance(current, dict) or k not in current:
+                return False
+            current = current[k]
+        return True
+    
+    # Map to internal params (only if user didn't provide them)
+    
+    # Body/Sub layer
+    if not has_user("kick.sub.amp.decay_ms"):
+        implied.setdefault("kick", {}).setdefault("sub", {}).setdefault("amp", {})["decay_ms"] = amp_decay_ms
+    if not has_user("kick.sub.amp.attack_ms"):
+        implied.setdefault("kick", {}).setdefault("sub", {}).setdefault("amp", {})["attack_ms"] = global_attack_ms
+    
+    # Pitch: set tune (fundamental)
+    if not has_user("tune") and not has_user("kick.tune"):
+        implied["tune"] = pitch_hz
+    
+    # Pitch envelope params (new)
+    if not has_user("kick.pitch_env.semitones"):
+        implied.setdefault("kick", {}).setdefault("pitch_env", {})["semitones"] = pitch_env_semitones
+    if not has_user("kick.pitch_env.decay_ms"):
+        implied.setdefault("kick", {}).setdefault("pitch_env", {})["decay_ms"] = pitch_decay_ms
+    
+    # Click layer
+    if not has_user("kick.click.gain_db"):
+        # click_level: 0.0 -> -24dB, 0.5 -> -12dB, 1.0 -> 0dB (perceptual curve)
+        # Use exponential curve: -24 * (1 - click_level^2)
+        implied.setdefault("kick", {}).setdefault("click", {})["gain_db"] = -24.0 * (1.0 - click_level ** 2)
+    if not has_user("kick.click.amp.attack_ms"):
+        implied.setdefault("kick", {}).setdefault("click", {}).setdefault("amp", {})["attack_ms"] = click_attack_ms
+    if not has_user("kick.click.amp.decay_ms"):
+        # Default click decay ~6-10ms
+        implied.setdefault("kick", {}).setdefault("click", {}).setdefault("amp", {})["decay_ms"] = 8.0
+    
+    # Click filter
+    if not has_user("kick.click.filter_hz"):
+        implied.setdefault("kick", {}).setdefault("click", {})["filter_hz"] = click_filter_hz
+    
+    # Hardness (transient saturation)
+    if not has_user("kick.click.hardness"):
+        implied.setdefault("kick", {}).setdefault("click", {})["hardness"] = hardness
+    
+    # Body drive (per-layer, oversampled)
+    if not has_user("kick.sub.drive_fold"):
+        implied.setdefault("kick", {}).setdefault("sub", {})["drive_fold"] = drive_fold
+    
+    # Knock attack
+    if not has_user("kick.knock.amp.attack_ms"):
+        implied.setdefault("kick", {}).setdefault("knock", {}).setdefault("amp", {})["attack_ms"] = global_attack_ms
+    
+    # EQ scoop
+    if not has_user("kick.eq.scoop_hz"):
+        implied.setdefault("kick", {}).setdefault("eq", {})["scoop_hz"] = eq_scoop_hz
+    if not has_user("kick.eq.scoop_db"):
+        implied.setdefault("kick", {}).setdefault("eq", {})["scoop_db"] = eq_scoop_db
+    
+    # Compressor
+    if not has_user("kick.comp.ratio"):
+        implied.setdefault("kick", {}).setdefault("comp", {})["ratio"] = comp_ratio
+    if not has_user("kick.comp.attack_ms"):
+        implied.setdefault("kick", {}).setdefault("comp", {})["attack_ms"] = comp_attack_ms
+    if not has_user("kick.comp.release_ms"):
+        implied.setdefault("kick", {}).setdefault("comp", {})["release_ms"] = comp_release_ms
+    
+    return implied
+
+
 def _amp_env_for_layer(
     layer_name: str,
     params: dict,
@@ -97,11 +240,28 @@ class KickEngine:
         torch.manual_seed(seed)
         duration = 0.5
 
+        # Apply spec param mapping if spec params exist
+        spec_implied = resolve_kick_spec_params(params)
+        if spec_implied:
+            # Deep merge spec-implied params into params (user params still win)
+            import copy
+            def _deep_merge_spec(base: dict, override: dict) -> dict:
+                result = copy.deepcopy(base)
+                for key, value in override.items():
+                    if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                        result[key] = _deep_merge_spec(result[key], value)
+                    else:
+                        # Only add if key doesn't exist (user params win)
+                        if key not in result:
+                            result[key] = copy.deepcopy(value)
+                return result
+            params = _deep_merge_spec(params, spec_implied)
+
         # Macro params (unchanged)
         punch_decay = params.get("punch_decay", 0.3)
         click_amount = params.get("click_amount", 0.5)
         click_snap = params.get("click_snap", 0.01)
-        tune = params.get("tune", 45.0)
+        tune = params.get("tune", 55.0)  # Updated default to 55Hz (realistic)
         room_tone_freq = params.get("room_tone_freq", 150.0)
         room_air = params.get("room_air", 0.3)
         distance_ms = params.get("distance_ms", 10.0)
@@ -110,11 +270,26 @@ class KickEngine:
         self.delay_line.reset()
 
         # ---------- Layer A (punch + click source) ----------
+        # Use spec pitch envelope if available, otherwise fall back to macro behavior
+        pitch_env_semitones = get_param(params, "kick.pitch_env.semitones", None)
+        pitch_env_decay_ms = get_param(params, "kick.pitch_env.decay_ms", None)
+        
+        if pitch_env_semitones is not None and pitch_env_decay_ms is not None:
+            # Spec mode: explicit pitch envelope
+            start_freq = tune * (2.0 ** (pitch_env_semitones / 12.0))
+            end_freq = tune
+            pitch_decay_s = pitch_env_decay_ms / 1000.0
+        else:
+            # Legacy macro mode: preserve existing behavior
+            start_freq = 150.0 + (click_amount * 100.0)
+            end_freq = tune
+            pitch_decay_s = 0.08
+        
         signal_a = self.layer_a.render(
             duration=duration,
-            start_freq=150.0 + (click_amount * 100.0),
-            end_freq=tune,
-            pitch_decay=0.08,
+            start_freq=start_freq,
+            end_freq=end_freq,
+            pitch_decay=pitch_decay_s,
             amp_decay=0.1 + (punch_decay * 0.4),
             fm_index_amt=click_amount,
             fm_decay=0.005 + (click_snap * 0.02),
