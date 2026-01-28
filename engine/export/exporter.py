@@ -35,9 +35,9 @@ class Exporter:
             slots = kit_data.get('slots', {})
             
             for inst_name, data in slots.items():
-                params = data.get('params')
+                params = data.get('params') or {}
                 seed = data.get('seed', 0)
-                
+
                 audio = None
                 if inst_name == 'kick':
                     audio = KickEngine(48000).render(params, seed)
@@ -47,12 +47,7 @@ class Exporter:
                     audio = HatEngine(48000).render(params, seed)
                     
                 if audio is not None:
-                     # Get WAV bytes
-                     wav_io = io.BytesIO()
-                     AudioIO.save_wav(audio, 48000, wav_io) # Need to adapt save_wav to take file-like obj
-                     # Adapted logic below since AudioIO.save_wav takes path str currently
-                     # Re-using internal numpy conversion logic
-                     wav_bytes = AudioIO.to_bytes(audio, 48000)
-                     zip_file.writestr(f"{inst_name}.wav", wav_bytes)
+                    wav_bytes = AudioIO.to_bytes(audio, 48000)
+                    zip_file.writestr(f"{inst_name}.wav", wav_bytes)
                      
         return buffer.getvalue()

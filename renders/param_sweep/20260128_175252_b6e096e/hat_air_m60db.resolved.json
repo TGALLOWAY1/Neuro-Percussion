@@ -1,0 +1,219 @@
+{
+  "instrument": "hat",
+  "script_name": "render.py param-sweep",
+  "timestamp": "2026-01-28T17:52:57.977924",
+  "git_hash": "b6e096e",
+  "seed": 42,
+  "mode": "default",
+  "input_params": {
+    "tightness": 0.5,
+    "sheen": 0.4,
+    "dirt": 0.2,
+    "color": 0.5,
+    "hat": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "tightness": 0.5,
+        "sheen": 0.4,
+        "dirt": 0.2,
+        "chick": 0.5,
+        "open": 0.0
+      },
+      "metal": {
+        "ratio_jitter": 0.1,
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 70.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "air": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 45.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "chick": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 10.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "dirt": {
+        "legacy_bitcrush": false
+      },
+      "spec": {
+        "metal_pitch_hz": 800.0,
+        "dissonance": 0.7,
+        "fm_amount": 0.5,
+        "hpf_hz": 3000.0,
+        "color_hz": 8000.0,
+        "decay_ms": 80.0,
+        "choke_group": true,
+        "is_open": false,
+        "attack_ms": 0.0
+      }
+    }
+  },
+  "params_after_spec": {
+    "tightness": 0.5,
+    "sheen": 0.4,
+    "dirt": 0.2,
+    "color": 0.5,
+    "hat": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "tightness": 0.5,
+        "sheen": 0.4,
+        "dirt": 0.2,
+        "chick": 0.5,
+        "open": 0.0
+      },
+      "metal": {
+        "ratio_jitter": 0.1,
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 70.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "base_hz": 800.0
+      },
+      "air": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 45.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "chick": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 10.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "dirt": {
+        "legacy_bitcrush": false
+      },
+      "spec": {
+        "metal_pitch_hz": 800.0,
+        "dissonance": 0.7,
+        "fm_amount": 0.5,
+        "hpf_hz": 3000.0,
+        "color_hz": 8000.0,
+        "decay_ms": 80.0,
+        "choke_group": true,
+        "is_open": false,
+        "attack_ms": 0.0
+      },
+      "hpf_hz": 3000.0,
+      "color_hz": 8000.0,
+      "choke_group": true,
+      "is_open": false
+    }
+  },
+  "params_after_clamp": null,
+  "resolved_params": {
+    "tightness": 0.5,
+    "sheen": 0.4,
+    "dirt": 0.2,
+    "color": 0.5,
+    "hat": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "tightness": 0.5,
+        "sheen": 0.4,
+        "dirt": 0.2,
+        "chick": 0.5,
+        "open": 0.0
+      },
+      "metal": {
+        "ratio_jitter": 0.1,
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 70.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "base_hz": 800.0
+      },
+      "air": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 45.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "chick": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 10.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "dirt": {
+        "legacy_bitcrush": false,
+        "drive": 1.4
+      },
+      "spec": {
+        "metal_pitch_hz": 800.0,
+        "dissonance": 0.7,
+        "fm_amount": 0.5,
+        "hpf_hz": 3000.0,
+        "color_hz": 8000.0,
+        "decay_ms": 80.0,
+        "choke_group": true,
+        "is_open": false,
+        "attack_ms": 0.0
+      },
+      "hpf_hz": 3000.0,
+      "color_hz": 8000.0,
+      "choke_group": true,
+      "is_open": false,
+      "post": {
+        "tilt_db": 0.0
+      }
+    }
+  },
+  "fingerprint": {
+    "sha256": "540a7b73ff0bda58abed918a1e2306b30659b91ce1aa83f4b8360c9e4d2f92f4",
+    "peak": 0.6660777926445007,
+    "rms": 0.37229469418525696,
+    "low_energy": 25600.75,
+    "mid_energy": 9440374.0,
+    "high_energy": 45034200.0
+  },
+  "qc_result": null,
+  "wav_path": "renders/param_sweep/20260128_175252_b6e096e/hat_air_m60db.wav"
+}

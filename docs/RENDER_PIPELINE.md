@@ -28,6 +28,12 @@ python tools/render.py preset-pack --debug --qc
 # Render spec recipes
 python tools/render.py spec-recipes kick --debug
 
+# Render macro-only presets
+python tools/render.py macro-presets --debug
+
+# Render listening pack (baseline + layer-muted + ADSR variants)
+python tools/render.py listen-pack --debug
+
 # Render control proof
 python tools/render.py control-proof --debug
 
@@ -40,20 +46,8 @@ python tools/render.py param-sweep --debug
 - `get_unique_output_dir()`: Generates unique timestamped directories
 - `_compute_audio_fingerprint()`: SHA256 hash + spectral analysis
 
-### Legacy Render Scripts
-These scripts still exist but should migrate to `tools/render.py`:
-
-- `tools/render_kick_spec_presets.py`: Kick spec presets
-- `tools/render_snare_spec_presets.py`: Snare spec presets
-- `tools/render_hat_spec_presets.py`: Hat spec presets
-- `tools/render_macro_presets.py`: Macro presets
-- `tools/render_control_proof.py`: Control proof renders
-- `tools/render_listen_pack.py`: Listening pack
-- `tools/render_mixready_pack.py`: Mix-ready pack
-
 ### Test Scripts
-- `tests/verify_kick.py`: Kick verification
-- `tests/verify_snare.py`: Snare verification
+- `tests/test_render_invariants.py`: Render invariants tests (param sweep, safety, determinism)
 
 ## Parameter Resolution Flow
 
@@ -274,6 +268,5 @@ Always use `--debug` flag when troubleshooting:
 - `engine/core/io.py`: AudioIO.to_bytes()
 
 ### Rendering Tools
-- `tools/render.py`: Canonical renderer
+- `tools/render.py`: Canonical renderer (single entrypoint)
 - `tools/render_core.py`: Core rendering utilities
-- `tools/render_*.py`: Legacy render scripts

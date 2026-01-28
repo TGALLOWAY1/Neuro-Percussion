@@ -36,18 +36,11 @@ Param sweep test now passes:
    - ✅ Unique output directories
    - ✅ Param sweep tests
 
-2. **Legacy Scripts** (still functional, should migrate):
-   - `tools/render_kick_spec_presets.py`
-   - `tools/render_snare_spec_presets.py`
-   - `tools/render_hat_spec_presets.py`
-   - `tools/render_macro_presets.py`
-   - `tools/render_control_proof.py`
-   - `tools/render_listen_pack.py`
-   - `tools/render_mixready_pack.py`
+2. **Legacy Scripts**: ✅ DELETED (consolidated into `tools/render.py`)
+   - All functionality migrated to canonical renderer subcommands
 
-3. **Test Scripts**:
-   - `tests/verify_kick.py`
-   - `tests/verify_snare.py`
+3. **Test Scripts**: ✅ CONSOLIDATED
+   - `tests/test_render_invariants.py`: Replaces `verify_kick.py` and `verify_snare.py`
 
 ### Parameter Resolution Flow (Verified)
 
@@ -89,11 +82,12 @@ Param sweep test now passes:
 
 ## Recommendations
 
-1. **Migrate legacy scripts**: Update existing render scripts to use `tools/render.py` or delete if redundant
+1. ✅ **Migrate legacy scripts**: COMPLETED - All legacy scripts deleted, functionality in `tools/render.py`
 2. **Use debug mode**: Always use `--debug` when troubleshooting renders
 3. **Run param sweep**: Use `python tools/render.py param-sweep` to verify params are applied
 4. **Check resolved.json**: Inspect debug JSON to verify param flow
 5. **Verify fingerprints**: Compare SHA256 hashes to detect identical renders
+6. **Run tests**: Use `pytest tests/test_render_invariants.py` to verify render invariants
 
 ## Current Status
 

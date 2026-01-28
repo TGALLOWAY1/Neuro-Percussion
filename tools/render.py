@@ -10,6 +10,8 @@ Subcommands:
     one-shot <instrument> <params_json>     Render a single one-shot
     preset-pack                              Render mix-ready pack (kick/snare/hat defaults + recipes)
     spec-recipes <instrument>                Render spec recipe presets
+    macro-presets                            Render macro-only presets (shows macro->advanced mapping)
+    listen-pack                              Render listening pack (baseline + layer-muted + ADSR variants)
     control-proof                            Render control proof (ADSR + fader variants)
     param-sweep                              Run param sweep tests to catch no-op renders
 
@@ -357,6 +359,272 @@ def cmd_spec_recipes(args):
     return 0
 
 
+def cmd_macro_presets(args):
+    """Render macro-only presets and show resolved params (macro->advanced mapping)."""
+    output_dir = args.output_dir or get_unique_output_dir("macro_presets")
+    
+    # Load presets
+    presets_file = Path("presets/macro_presets.json")
+    if not presets_file.exists():
+        print(f"Error: {presets_file} not found")
+        return 1
+    
+    with open(presets_file, "r") as f:
+        presets_data = json.load(f)
+    
+    presets = presets_data.get("kick", {}), presets_data.get("snare", {}), presets_data.get("hat", {})
+    
+    print(f"Rendering macro presets to {output_dir}")
+    if args.debug:
+        print("Debug mode enabled")
+    
+    seed = args.seed if args.seed is not None else 42
+    
+    # Helper to print resolved params
+    def _print_resolved_params(resolved: dict, instrument: str, preset_name: str):
+        print(f"\n  Resolved params for {instrument}/{preset_name}:")
+        
+        if instrument == "kick":
+            click_gain = resolved.get("kick", {}).get("click", {}).get("gain_db", "N/A")
+            click_decay = resolved.get("kick", {}).get("click", {}).get("amp", {}).get("decay_ms", "N/A")
+            sub_decay = resolved.get("kick", {}).get("sub", {}).get("amp", {}).get("decay_ms", "N/A")
+            room_gain = resolved.get("kick", {}).get("room", {}).get("gain_db", "N/A")
+            print(f"    click.gain_db={click_gain}, click.amp.decay_ms={click_decay}")
+            print(f"    sub.amp.decay_ms={sub_decay}, room.gain_db={room_gain}")
+        
+        elif instrument == "snare":
+            shell_gain = resolved.get("snare", {}).get("shell", {}).get("gain_db", "N/A")
+            shell_decay = resolved.get("snare", {}).get("shell", {}).get("amp", {}).get("decay_ms", "N/A")
+            wires_gain = resolved.get("snare", {}).get("wires", {}).get("gain_db", "N/A")
+            wires_decay = resolved.get("snare", {}).get("wires", {}).get("amp", {}).get("decay_ms", "N/A")
+            print(f"    shell.gain_db={shell_gain}, shell.amp.decay_ms={shell_decay}")
+            print(f"    wires.gain_db={wires_gain}, wires.amp.decay_ms={wires_decay}")
+        
+        elif instrument == "hat":
+            metal_decay = resolved.get("hat", {}).get("metal", {}).get("amp", {}).get("decay_ms", "N/A")
+            air_gain = resolved.get("hat", {}).get("air", {}).get("gain_db", "N/A")
+            air_decay = resolved.get("hat", {}).get("air", {}).get("amp", {}).get("decay_ms", "N/A")
+            chick_gain = resolved.get("hat", {}).get("chick", {}).get("gain_db", "N/A")
+            print(f"    metal.amp.decay_ms={metal_decay}, air.gain_db={air_gain}")
+            print(f"    air.amp.decay_ms={air_decay}, chick.gain_db={chick_gain}")
+    
+    # Kick
+    print("\nKICK:")
+    kick_presets = presets_data.get("kick", {})
+    for preset_name, preset_params in kick_presets.items():
+        resolved = resolve_params("kick", preset_params)
+        filename = f"kick_{preset_name}"
+        
+        _, debug_info = render_one_shot(
+            "kick", resolved, output_dir, filename,
+            seed=seed, debug=args.debug, qc=False, mode=args.mode,
+            script_name="render.py macro-presets"
+        )
+        
+        _print_resolved_params(resolved, "kick", preset_name)
+    
+    # Snare
+    print("\nSNARE:")
+    snare_presets = presets_data.get("snare", {})
+    for preset_name, preset_params in snare_presets.items():
+        resolved = resolve_params("snare", preset_params)
+        filename = f"snare_{preset_name}"
+        
+        _, debug_info = render_one_shot(
+            "snare", resolved, output_dir, filename,
+            seed=seed, debug=args.debug, qc=False, mode=args.mode,
+            script_name="render.py macro-presets"
+        )
+        
+        _print_resolved_params(resolved, "snare", preset_name)
+    
+    # Hat
+    print("\nHAT:")
+    hat_presets = presets_data.get("hat", {})
+    for preset_name, preset_params in hat_presets.items():
+        resolved = resolve_params("hat", preset_params)
+        filename = f"hat_{preset_name}"
+        
+        _, debug_info = render_one_shot(
+            "hat", resolved, output_dir, filename,
+            seed=seed, debug=args.debug, qc=False, mode=args.mode,
+            script_name="render.py macro-presets"
+        )
+        
+        _print_resolved_params(resolved, "hat", preset_name)
+    
+    print(f"\nDone. Output in {output_dir}/")
+    return 0
+
+
+def cmd_listen_pack(args):
+    """Render listening pack: baseline + layer-muted + ADSR variants."""
+    output_dir = args.output_dir or get_unique_output_dir("listen_pack")
+    
+    print(f"Rendering listening pack to {output_dir}")
+    if args.debug:
+        print("Debug mode enabled")
+    
+    seed = args.seed if args.seed is not None else 42
+    
+    def _merge(base: dict, *additions: dict) -> dict:
+        out = dict(base)
+        for d in additions:
+            for k, v in d.items():
+                if k not in out or not isinstance(out[k], dict) or not isinstance(v, dict):
+                    out[k] = v
+                else:
+                    out[k] = _merge(out[k], v)
+        return out
+    
+    # Kick
+    print("\nKICK:")
+    kick_base = {
+        "punch_decay": 0.35,
+        "click_amount": 0.6,
+        "click_snap": 0.01,
+        "tune": 45.0,
+        "room_tone_freq": 150.0,
+        "room_air": 0.3,
+        "distance_ms": 10.0,
+        "blend": 0.3,
+    }
+    
+    # Baseline
+    _, _ = render_one_shot(
+        "kick", kick_base, output_dir, "kick_baseline",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Click muted
+    p = _merge(kick_base, {"kick": {"click": {"gain_db": -60.0}}})
+    _, _ = render_one_shot(
+        "kick", p, output_dir, "kick_click_muted",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Short ADSR
+    p = _merge(kick_base, {
+        "kick": {
+            "sub": {"amp": {"decay_ms": 80.0}},
+            "click": {"amp": {"decay_ms": 15.0}},
+        }
+    })
+    _, _ = render_one_shot(
+        "kick", p, output_dir, "kick_short_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Long ADSR
+    p = _merge(kick_base, {
+        "kick": {
+            "sub": {"amp": {"decay_ms": 350.0}},
+            "click": {"amp": {"decay_ms": 80.0}},
+        }
+    })
+    _, _ = render_one_shot(
+        "kick", p, output_dir, "kick_long_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Snare
+    print("\nSNARE:")
+    snare_base = {"tone": 0.5, "wire": 0.5, "crack": 0.5, "body": 0.5}
+    
+    # Baseline
+    _, _ = render_one_shot(
+        "snare", snare_base, output_dir, "snare_baseline",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Wires muted
+    p = _merge(snare_base, {"snare": {"wires": {"gain_db": -60.0}}})
+    _, _ = render_one_shot(
+        "snare", p, output_dir, "snare_wires_muted",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Short ADSR
+    p = _merge(snare_base, {
+        "snare": {
+            "shell": {"amp": {"decay_ms": 150.0, "sustain": 0.0}},
+            "wires": {"amp": {"decay_ms": 150.0, "sustain": 0.0}},
+        }
+    })
+    _, _ = render_one_shot(
+        "snare", p, output_dir, "snare_short_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Long ADSR
+    p = _merge(snare_base, {
+        "snare": {
+            "shell": {"amp": {"decay_ms": 450.0, "sustain": 0.2}},
+            "wires": {"amp": {"decay_ms": 400.0, "sustain": 0.1}},
+        }
+    })
+    _, _ = render_one_shot(
+        "snare", p, output_dir, "snare_long_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Hat
+    print("\nHAT:")
+    hat_base = {"tightness": 0.5, "sheen": 0.5, "dirt": 0.3, "color": 0.5}
+    
+    # Baseline
+    _, _ = render_one_shot(
+        "hat", hat_base, output_dir, "hat_baseline",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Air muted
+    p = _merge(hat_base, {"hat": {"air": {"gain_db": -60.0}}})
+    _, _ = render_one_shot(
+        "hat", p, output_dir, "hat_air_muted",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Short ADSR
+    p = _merge(hat_base, {
+        "hat": {
+            "metal": {"amp": {"decay_ms": 80.0, "sustain": 0.0}},
+            "air": {"amp": {"decay_ms": 80.0, "sustain": 0.0}},
+        }
+    })
+    _, _ = render_one_shot(
+        "hat", p, output_dir, "hat_short_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    # Long ADSR
+    p = _merge(hat_base, {
+        "hat": {
+            "metal": {"amp": {"decay_ms": 500.0, "sustain": 0.2}},
+            "air": {"amp": {"decay_ms": 500.0, "sustain": 0.2}},
+        }
+    })
+    _, _ = render_one_shot(
+        "hat", p, output_dir, "hat_long_adsr",
+        seed=seed, debug=args.debug, qc=False, mode=args.mode,
+        script_name="render.py listen-pack"
+    )
+    
+    print(f"\nDone. Output in {output_dir}/")
+    return 0
+
+
 def cmd_control_proof(args):
     """Render control proof: baseline + ADSR variants + fader variants."""
     output_dir = args.output_dir or get_unique_output_dir("control_proof")
@@ -673,6 +941,14 @@ def main():
     p_spec.add_argument("instrument", choices=["kick", "snare", "hat"])
     add_common_args(p_spec)
     
+    # macro-presets subcommand
+    p_macro = subparsers.add_parser("macro-presets", help="Render macro-only presets")
+    add_common_args(p_macro)
+    
+    # listen-pack subcommand
+    p_listen = subparsers.add_parser("listen-pack", help="Render listening pack")
+    add_common_args(p_listen)
+    
     # control-proof subcommand
     p_ctrl = subparsers.add_parser("control-proof", help="Render control proof")
     add_common_args(p_ctrl)
@@ -693,6 +969,10 @@ def main():
         return cmd_preset_pack(args)
     elif args.command == "spec-recipes":
         return cmd_spec_recipes(args)
+    elif args.command == "macro-presets":
+        return cmd_macro_presets(args)
+    elif args.command == "listen-pack":
+        return cmd_listen_pack(args)
     elif args.command == "control-proof":
         return cmd_control_proof(args)
     elif args.command == "param-sweep":

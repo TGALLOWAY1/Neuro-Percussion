@@ -1,0 +1,218 @@
+{
+  "instrument": "kick",
+  "script_name": "render.py param-sweep",
+  "timestamp": "2026-01-28T17:52:52.658112",
+  "git_hash": "b6e096e",
+  "seed": 42,
+  "mode": "default",
+  "input_params": {
+    "punch_decay": 0.5,
+    "click_amount": 0.5,
+    "click_snap": 0.5,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 20.0,
+    "blend": 0.3,
+    "kick": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "decay_ms": 180.0,
+        "click": 0.5,
+        "click_tight": 0.5,
+        "punch": 0.5,
+        "pitch_drop": 0.5,
+        "room": 0.3,
+        "tone": 0.5
+      },
+      "knock": {
+        "gain_db": -4.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 120.0,
+          "sustain": 0.0,
+          "release_ms": 15.0
+        }
+      },
+      "sub": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 180.0,
+          "sustain": 0.0,
+          "release_ms": 10.0
+        }
+      },
+      "click": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 6.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        }
+      },
+      "room": {
+        "gain_db": -10.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 300.0,
+          "sustain": 0.0,
+          "release_ms": 20.0
+        }
+      }
+    }
+  },
+  "params_after_spec": {
+    "punch_decay": 0.5,
+    "click_amount": 0.5,
+    "click_snap": 0.5,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 20.0,
+    "blend": 0.3,
+    "kick": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "decay_ms": 180.0,
+        "click": 0.5,
+        "click_tight": 0.5,
+        "punch": 0.5,
+        "pitch_drop": 0.5,
+        "room": 0.3,
+        "tone": 0.5
+      },
+      "knock": {
+        "gain_db": -4.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 120.0,
+          "sustain": 0.0,
+          "release_ms": 15.0
+        }
+      },
+      "sub": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 180.0,
+          "sustain": 0.0,
+          "release_ms": 10.0
+        }
+      },
+      "click": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 6.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        }
+      },
+      "room": {
+        "gain_db": -10.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 300.0,
+          "sustain": 0.0,
+          "release_ms": 20.0
+        }
+      }
+    }
+  },
+  "params_after_clamp": null,
+  "resolved_params": {
+    "punch_decay": 0.5,
+    "click_amount": 0.5,
+    "click_snap": 0.5,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 20.0,
+    "blend": 0.3,
+    "kick": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "decay_ms": 180.0,
+        "click": 0.5,
+        "click_tight": 0.5,
+        "punch": 0.5,
+        "pitch_drop": 0.5,
+        "room": 0.3,
+        "tone": 0.5
+      },
+      "knock": {
+        "gain_db": -4.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 120.0,
+          "sustain": 0.0,
+          "release_ms": 15.0
+        }
+      },
+      "sub": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 180.0,
+          "sustain": 0.0,
+          "release_ms": 10.0
+        }
+      },
+      "click": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 6.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        },
+        "fm": {
+          "depth": 0.5,
+          "decay_ms": 11.0
+        }
+      },
+      "room": {
+        "gain_db": -10.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 300.0,
+          "sustain": 0.0,
+          "release_ms": 20.0
+        },
+        "distance_ms": 12.0
+      },
+      "pitch_drop": {
+        "amount": 0.5,
+        "time_ms": 60.0
+      }
+    },
+    "transient_shaper": 0.3
+  },
+  "fingerprint": {
+    "sha256": "b9fae3541bcb9100f1cd82372215e08d25de0c5605f5cfeb239747c98a551a44",
+    "peak": 0.7077653408050537,
+    "rms": 0.11499448865652084,
+    "low_energy": 4755029.0,
+    "mid_energy": 419056.1875,
+    "high_energy": 9.739757537841797
+  },
+  "qc_result": null,
+  "wav_path": "renders/param_sweep/20260128_175252_b6e096e/kick_click_m60db.wav"
+}

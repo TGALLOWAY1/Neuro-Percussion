@@ -1,0 +1,112 @@
+{
+  "instrument": "kick",
+  "script_name": "render.py listen-pack",
+  "timestamp": "2026-01-28T17:59:28.665773",
+  "git_hash": "03471f3",
+  "seed": 42,
+  "mode": "default",
+  "input_params": {
+    "punch_decay": 0.35,
+    "click_amount": 0.6,
+    "click_snap": 0.01,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 10.0,
+    "blend": 0.3
+  },
+  "params_after_spec": {
+    "punch_decay": 0.35,
+    "click_amount": 0.6,
+    "click_snap": 0.01,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 10.0,
+    "blend": 0.3
+  },
+  "params_after_clamp": null,
+  "resolved_params": {
+    "punch_decay": 0.35,
+    "click_amount": 0.6,
+    "click_snap": 0.01,
+    "tune": 45.0,
+    "room_tone_freq": 150.0,
+    "room_air": 0.3,
+    "distance_ms": 10.0,
+    "blend": 0.3,
+    "kick": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "decay_ms": 180.0,
+        "click": 0.5,
+        "click_tight": 0.5,
+        "punch": 0.5,
+        "pitch_drop": 0.5,
+        "room": 0.3,
+        "tone": 0.5
+      },
+      "knock": {
+        "gain_db": -4.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 120.0,
+          "sustain": 0.0,
+          "release_ms": 15.0
+        }
+      },
+      "sub": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 180.0,
+          "sustain": 0.0,
+          "release_ms": 10.0
+        }
+      },
+      "click": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 11.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        },
+        "fm": {
+          "depth": 0.5,
+          "decay_ms": 11.0
+        }
+      },
+      "room": {
+        "gain_db": -10.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 300.0,
+          "sustain": 0.0,
+          "release_ms": 20.0
+        },
+        "distance_ms": 12.0
+      },
+      "pitch_drop": {
+        "amount": 0.5,
+        "time_ms": 60.0
+      }
+    },
+    "transient_shaper": 0.3
+  },
+  "fingerprint": {
+    "sha256": "1309d5dce1a1c97e98558e1679144b69ffc9d33cd056e3a8f607bb8fee6494b9",
+    "peak": 0.8210494518280029,
+    "rms": 0.12649674713611603,
+    "low_energy": 5471060.0,
+    "mid_energy": 810116.25,
+    "high_energy": 3554.80712890625
+  },
+  "qc_result": null,
+  "wav_path": "renders/listen_pack/20260128_175928_03471f3/kick_baseline.wav"
+}

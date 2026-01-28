@@ -1,0 +1,282 @@
+{
+  "instrument": "snare",
+  "script_name": "render.py param-sweep",
+  "timestamp": "2026-01-28T17:54:32.801218",
+  "git_hash": "03471f3",
+  "seed": 42,
+  "mode": "default",
+  "input_params": {
+    "tone": 0.5,
+    "wire": 0.4,
+    "crack": 0.5,
+    "body": 0.5,
+    "snare": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "body": 0.5,
+        "tension": 0.5,
+        "crack": 0.5,
+        "wires": 0.4,
+        "room": 0.0
+      },
+      "exciter_body": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 50.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        }
+      },
+      "exciter_air": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 20.0,
+          "sustain": 0.0,
+          "release_ms": 3.0
+        }
+      },
+      "shell": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 500.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "wires": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 140.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "room": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 400.0,
+          "sustain": 0.0,
+          "release_ms": 0.0
+        }
+      },
+      "spec": {
+        "tune_hz": 200.0,
+        "tone_decay_ms": 150.0,
+        "pitch_env_st": 12.0,
+        "snare_level": 0.6,
+        "noise_decay_ms": 250.0,
+        "wire_filter_hz": 5000.0,
+        "snap_attack_ms": 1.0,
+        "hardness": 0.5,
+        "box_cut_db": -6.0,
+        "box_cut_hz": 500.0
+      }
+    }
+  },
+  "params_after_spec": {
+    "tone": 0.5,
+    "wire": 0.4,
+    "crack": 0.5,
+    "body": 0.5,
+    "snare": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "body": 0.5,
+        "tension": 0.5,
+        "crack": 0.5,
+        "wires": 0.4,
+        "room": 0.0
+      },
+      "exciter_body": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 50.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        }
+      },
+      "exciter_air": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 20.0,
+          "sustain": 0.0,
+          "release_ms": 3.0
+        }
+      },
+      "shell": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 500.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "pitch_hz": 200.0,
+        "pitch_env_st": 12.0,
+        "pitch_decay_ms": 80.0
+      },
+      "wires": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 140.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "filter_hz": 5000.0
+      },
+      "room": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 400.0,
+          "sustain": 0.0,
+          "release_ms": 0.0
+        }
+      },
+      "spec": {
+        "tune_hz": 200.0,
+        "tone_decay_ms": 150.0,
+        "pitch_env_st": 12.0,
+        "snare_level": 0.6,
+        "noise_decay_ms": 250.0,
+        "wire_filter_hz": 5000.0,
+        "snap_attack_ms": 1.0,
+        "hardness": 0.5,
+        "box_cut_db": -6.0,
+        "box_cut_hz": 500.0
+      },
+      "snap": {
+        "hardness": 0.5
+      },
+      "box_cut": {
+        "hz": 500.0,
+        "db": -6.0
+      }
+    }
+  },
+  "params_after_clamp": null,
+  "resolved_params": {
+    "tone": 0.5,
+    "wire": 0.4,
+    "crack": 0.5,
+    "body": 0.5,
+    "snare": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "body": 0.5,
+        "tension": 0.5,
+        "crack": 0.5,
+        "wires": 0.4,
+        "room": 0.0
+      },
+      "exciter_body": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 50.0,
+          "sustain": 0.0,
+          "release_ms": 5.0
+        }
+      },
+      "exciter_air": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 20.0,
+          "sustain": 0.0,
+          "release_ms": 3.0
+        }
+      },
+      "shell": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 500.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "pitch_hz": 200.0,
+        "pitch_env_st": 12.0,
+        "pitch_decay_ms": 80.0,
+        "lpf": {
+          "initial_cutoff_hz": 2250.0,
+          "final_cutoff_hz": 1250.0
+        }
+      },
+      "wires": {
+        "gain_db": -60.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 140.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        },
+        "filter_hz": 5000.0
+      },
+      "room": {
+        "gain_db": -200.0,
+        "mute": true,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 400.0,
+          "sustain": 0.0,
+          "release_ms": 0.0
+        }
+      },
+      "spec": {
+        "tune_hz": 200.0,
+        "tone_decay_ms": 150.0,
+        "pitch_env_st": 12.0,
+        "snare_level": 0.6,
+        "noise_decay_ms": 250.0,
+        "wire_filter_hz": 5000.0,
+        "snap_attack_ms": 1.0,
+        "hardness": 0.5,
+        "box_cut_db": -6.0,
+        "box_cut_hz": 500.0
+      },
+      "snap": {
+        "hardness": 0.5
+      },
+      "box_cut": {
+        "hz": 500.0,
+        "db": -6.0
+      }
+    }
+  },
+  "fingerprint": {
+    "sha256": "7bb18e462ec6d905b8fa07ce3f5f278ab7c3c7fbe999259ca79d7920133b1d5d",
+    "peak": 0.6455978155136108,
+    "rms": 0.081476591527462,
+    "low_energy": 9248.0029296875,
+    "mid_energy": 2364307.5,
+    "high_energy": 236755.96875
+  },
+  "qc_result": null,
+  "wav_path": "renders/param_sweep/20260128_175426_03471f3/snare_wires_m60db.wav"
+}

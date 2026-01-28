@@ -12,27 +12,38 @@ const INSTRUMENTS: InstrumentType[] = ['kick', 'snare', 'hat'];
 
 const CONFIG = {
     kick: [
-        { id: 'drop', label: 'Drop (Pitch)' },
-        { id: 'knock', label: 'Knock (Body)' },
-        { id: 'punch', label: 'Punch (Click)' },
-        { id: 'weight', label: 'Weight (Decay)' },
+        { id: 'punch_decay', label: 'Punch Decay', min: 0.1, max: 1.0 },
+        { id: 'click_amount', label: 'Click Amount', min: 0.0, max: 1.0 },
+        { id: 'click_snap', label: 'Click Snap', min: 0.0, max: 1.0 },
+        { id: 'room_tone_freq', label: 'Room Tone (Hz)', min: 50.0, max: 300.0 },
+        { id: 'room_air', label: 'Room Air', min: 0.0, max: 1.0 },
+        { id: 'distance_ms', label: 'Distance (ms)', min: 0.0, max: 50.0 },
+        { id: 'blend', label: 'Room Mix', min: 0.0, max: 1.0 },
     ],
     snare: [
-        { id: 'tone', label: 'Tone (Shell)' },
-        { id: 'wire', label: 'Wire (Rattle)' },
-        { id: 'crack', label: 'Crack (Snap)' },
-        { id: 'body', label: 'Body (Depth)' },
+        { id: 'tone', label: 'Tone (Shell)', min: 0.0, max: 1.0 },
+        { id: 'wire', label: 'Wire (Rattle)', min: 0.0, max: 1.0 },
+        { id: 'crack', label: 'Crack (Snap)', min: 0.0, max: 1.0 },
+        { id: 'body', label: 'Body (Depth)', min: 0.0, max: 1.0 },
     ],
     hat: [
-        { id: 'tightness', label: 'Tightness' },
-        { id: 'sheen', label: 'Sheen (Air)' },
-        { id: 'dirt', label: 'Dirt (Sat)' },
-        { id: 'color', label: 'Color (FM)' },
+        { id: 'tightness', label: 'Tightness', min: 0.0, max: 1.0 },
+        { id: 'sheen', label: 'Sheen (Air)', min: 0.0, max: 1.0 },
+        { id: 'dirt', label: 'Dirt (Sat)', min: 0.0, max: 1.0 },
+        { id: 'color', label: 'Color (FM)', min: 0.0, max: 1.0 },
     ],
 };
 
 const DEFAULT_PARAMS = {
-    kick: { drop: 0.5, knock: 0.4, punch: 0.3, weight: 0.6 },
+    kick: {
+        punch_decay: 0.5,
+        click_amount: 0.5,
+        click_snap: 0.5,
+        room_tone_freq: 150.0,
+        room_air: 0.3,
+        distance_ms: 20.0,
+        blend: 0.3
+    },
     snare: { tone: 0.5, wire: 0.4, crack: 0.5, body: 0.5 },
     hat: { tightness: 0.5, sheen: 0.4, dirt: 0.2, color: 0.5 },
 };
@@ -268,8 +279,8 @@ export default function AuditionView() {
                             key={p.id}
                             label={p.label}
                             value={params[p.id] || 0}
-                            min={0}
-                            max={1}
+                            min={p.min ?? 0}
+                            max={p.max ?? 1}
                             onChange={(v) => updateParam(p.id, v)}
                         />
                     ))}

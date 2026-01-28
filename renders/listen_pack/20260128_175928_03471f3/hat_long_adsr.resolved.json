@@ -1,0 +1,125 @@
+{
+  "instrument": "hat",
+  "script_name": "render.py listen-pack",
+  "timestamp": "2026-01-28T17:59:41.243852",
+  "git_hash": "03471f3",
+  "seed": 42,
+  "mode": "default",
+  "input_params": {
+    "tightness": 0.5,
+    "sheen": 0.5,
+    "dirt": 0.3,
+    "color": 0.5,
+    "hat": {
+      "metal": {
+        "amp": {
+          "decay_ms": 500.0,
+          "sustain": 0.2
+        }
+      },
+      "air": {
+        "amp": {
+          "decay_ms": 500.0,
+          "sustain": 0.2
+        }
+      }
+    }
+  },
+  "params_after_spec": {
+    "tightness": 0.5,
+    "sheen": 0.5,
+    "dirt": 0.3,
+    "color": 0.5,
+    "hat": {
+      "metal": {
+        "amp": {
+          "decay_ms": 500.0,
+          "sustain": 0.2
+        }
+      },
+      "air": {
+        "amp": {
+          "decay_ms": 500.0,
+          "sustain": 0.2
+        }
+      }
+    }
+  },
+  "params_after_clamp": null,
+  "resolved_params": {
+    "tightness": 0.5,
+    "sheen": 0.5,
+    "dirt": 0.3,
+    "color": 0.5,
+    "hat": {
+      "macros": {
+        "length_ms": 500.0,
+        "attack_ms": 0.0,
+        "tightness": 0.5,
+        "sheen": 0.4,
+        "dirt": 0.2,
+        "chick": 0.5,
+        "open": 0.0
+      },
+      "metal": {
+        "ratio_jitter": 0.1,
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 500.0,
+          "sustain": 0.2,
+          "release_ms": 0.0
+        }
+      },
+      "air": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 500.0,
+          "sustain": 0.2,
+          "release_ms": 0.0
+        }
+      },
+      "chick": {
+        "gain_db": 0.0,
+        "mute": false,
+        "amp": {
+          "attack_ms": 0.0,
+          "decay_ms": 10.0,
+          "sustain": 1.0,
+          "release_ms": 0.0
+        }
+      },
+      "dirt": {
+        "legacy_bitcrush": false,
+        "drive": 1.4
+      },
+      "spec": {
+        "metal_pitch_hz": 800.0,
+        "dissonance": 0.7,
+        "fm_amount": 0.5,
+        "hpf_hz": 3000.0,
+        "color_hz": 8000.0,
+        "decay_ms": 80.0,
+        "choke_group": true,
+        "is_open": false,
+        "attack_ms": 0.0
+      },
+      "post": {
+        "tilt_db": 0.0
+      }
+    }
+  },
+  "fingerprint": {
+    "sha256": "9dd121a76feccda4788d20e53d621106048d58c622a4e10a62d8de76f261a164",
+    "peak": 0.6707348227500916,
+    "rms": 0.2431180775165558,
+    "low_energy": 4729.15478515625,
+    "mid_energy": 3961434.5,
+    "high_energy": 19275280.0
+  },
+  "qc_result": null,
+  "wav_path": "renders/listen_pack/20260128_175928_03471f3/hat_long_adsr.wav"
+}
