@@ -1,0 +1,68 @@
+{
+  "presets": {
+    "Tight Pop Snare": {
+      "snare": {
+        "spec": {
+          "tune_hz": 220.0,
+          "tone_decay_ms": 120.0,
+          "pitch_env_st": 8.0,
+          "snare_level": 0.7,
+          "noise_decay_ms": 200.0,
+          "wire_filter_hz": 6000.0,
+          "snap_attack_ms": 0.5,
+          "hardness": 0.6,
+          "box_cut_db": -4.0,
+          "box_cut_hz": 500.0
+        }
+      }
+    },
+    "Trap Snare": {
+      "snare": {
+        "spec": {
+          "tune_hz": 180.0,
+          "tone_decay_ms": 200.0,
+          "pitch_env_st": 15.0,
+          "snare_level": 0.8,
+          "noise_decay_ms": 350.0,
+          "wire_filter_hz": 4500.0,
+          "snap_attack_ms": 1.0,
+          "hardness": 0.7,
+          "box_cut_db": -8.0,
+          "box_cut_hz": 480.0
+        }
+      }
+    },
+    "Drum & Bass": {
+      "snare": {
+        "spec": {
+          "tune_hz": 200.0,
+          "tone_decay_ms": 100.0,
+          "pitch_env_st": 18.0,
+          "snare_level": 0.9,
+          "noise_decay_ms": 180.0,
+          "wire_filter_hz": 7000.0,
+          "snap_attack_ms": 0.3,
+          "hardness": 0.9,
+          "box_cut_db": -6.0,
+          "box_cut_hz": 500.0
+        }
+      }
+    },
+    "Gritty Electro": {
+      "snare": {
+        "spec": {
+          "tune_hz": 190.0,
+          "tone_decay_ms": 250.0,
+          "pitch_env_st": 12.0,
+          "snare_level": 0.65,
+          "noise_decay_ms": 400.0,
+          "wire_filter_hz": 4000.0,
+          "snap_attack_ms": 2.0,
+          "hardness": 0.85,
+          "box_cut_db": -10.0,
+          "box_cut_hz": 520.0
+        }
+      }
+    }
+  }
+}
