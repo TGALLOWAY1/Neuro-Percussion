@@ -31,7 +31,6 @@ from engine.core.io import AudioIO
 from fastapi import Response, Query
 from engine.params.resolve import resolve_params
 from engine.params.clamp import clamp_params
-import base64
 
 @app.post("/generate/kick")
 async def generate_kick(
@@ -40,7 +39,7 @@ async def generate_kick(
 ):
     """
     Generates a kick drum.
-    Returns JSON with base64-encoded audio and resolved_params.
+    Returns WAV audio bytes (binary).
     
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
@@ -63,11 +62,14 @@ async def generate_kick(
     # Export to bytes
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
     
-    # Return JSON with base64 audio and resolved params
-    return {
-        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
-        "resolved_params": resolved,
-    }
+    # Return WAV bytes directly (frontend expects blob)
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={
+            "Content-Disposition": "attachment; filename=kick.wav"
+        }
+    )
 
 from engine.instruments.snare import SnareEngine
 from engine.instruments.hat import HatEngine
@@ -79,7 +81,7 @@ async def generate_snare(
 ):
     """
     Generates a snare drum.
-    Returns JSON with base64-encoded audio and resolved_params.
+    Returns WAV audio bytes (binary).
     
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
@@ -97,10 +99,14 @@ async def generate_snare(
     audio = engine.render(resolved, seed=seed)
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
     
-    return {
-        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
-        "resolved_params": resolved,
-    }
+    # Return WAV bytes directly (frontend expects blob)
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={
+            "Content-Disposition": "attachment; filename=snare.wav"
+        }
+    )
 
 @app.post("/generate/hat")
 async def generate_hat(
@@ -109,7 +115,7 @@ async def generate_hat(
 ):
     """
     Generates a hi-hat.
-    Returns JSON with base64-encoded audio and resolved_params.
+    Returns WAV audio bytes (binary).
     
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
@@ -127,10 +133,14 @@ async def generate_hat(
     audio = engine.render(resolved, seed=seed)
     wav_bytes = AudioIO.to_bytes(audio, 48000, format='WAV')
     
-    return {
-        "audio": base64.b64encode(wav_bytes).decode("utf-8"),
-        "resolved_params": resolved,
-    }
+    # Return WAV bytes directly (frontend expects blob)
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={
+            "Content-Disposition": "attachment; filename=hat.wav"
+        }
+    )
 
 
 # --- ML Globals ---
