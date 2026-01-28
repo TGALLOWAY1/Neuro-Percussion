@@ -169,6 +169,9 @@ samplers = {
 # Advanced params (per-layer gain_db/mute, ADSR, etc.) are manual/UI-only for now
 # and are not in PARAM_SPACES to avoid exploding the search space.
 # Ranges tightened to avoid harsh synthetic regions.
+# Mix-ready targets:
+#   - Snare: box cut 300-600Hz should be reduced (avoid extreme tone/crack/wire)
+#   - Hat: should have little energy below 3kHz (avoid excessive dirt/FM)
 PARAM_SPACES = {
     'kick': {
         'punch_decay': (0.15, 0.9),      # Tightened: avoid too short/long extremes
@@ -180,16 +183,18 @@ PARAM_SPACES = {
         'blend': (0.1, 0.7)              # Tightened: avoid 0 (no room) and too much room
     },
     'snare': {
-        'tone': (0.2, 0.9),              # Tightened: avoid extreme frequencies
-        'wire': (0.1, 0.85),             # Tightened: extremes sound synthetic
-        'crack': (0.1, 0.85),            # Tightened: high crack can be harsh
-        'body': (0.2, 0.9)               # Tightened: avoid extreme body
+        # Tightened to avoid extreme boxiness (300-600Hz) and harshness
+        'tone': (0.3, 0.8),              # Tightened: extreme frequencies cause boxiness
+        'wire': (0.1, 0.75),             # Tightened: high wire can be harsh/metallic
+        'crack': (0.1, 0.7),              # Tightened: high crack causes harsh transients
+        'body': (0.2, 0.85)              # Tightened: avoid extreme body (affects boxiness)
     },
     'hat': {
-        'tightness': (0.1, 0.95),        # Tightened: avoid fully open/closed extremes
-        'sheen': (0.0, 0.85),            # Tightened: high sheen can be harsh
-        'dirt': (0.0, 0.7),              # Tightened: high dirt is too harsh
-        'color': (0.2, 0.9)              # Tightened: avoid extreme color shifts
+        # Tightened to avoid brittle/harsh sounds; mix-ready: minimal energy below 3kHz
+        'tightness': (0.1, 0.95),        # Keep reasonable range
+        'sheen': (0.0, 0.7),              # Tightened: high sheen can be harsh
+        'dirt': (0.0, 0.5),               # Tightened: high dirt/FM causes brittleness
+        'color': (0.2, 0.85)              # Tightened: avoid extreme color shifts
     }
 }
 
