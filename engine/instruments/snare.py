@@ -16,6 +16,152 @@ from engine.core.params import get_param
 
 logger = logging.getLogger(__name__)
 
+
+def resolve_snare_spec_params(params: dict) -> dict:
+    """
+    Map snare.spec.* parameters to internal params.
+    Only applies if any snare.spec.* keys exist.
+    User-provided advanced params take precedence (not overwritten).
+    
+    Returns a dict of implied internal params that should be merged with user params.
+    """
+    # Check if spec params exist
+    spec_prefix = "snare.spec."
+    has_spec = any(key.startswith(spec_prefix) for key in params.keys()) or (
+        "snare" in params and isinstance(params.get("snare"), dict) and "spec" in params.get("snare", {})
+    )
+    
+    if not has_spec:
+        return {}
+    
+    implied = {}
+    
+    # Helper to get spec param with default
+    def get_spec(key: str, default: float) -> float:
+        # Try nested: params["snare"]["spec"][key]
+        if "snare" in params and isinstance(params["snare"], dict):
+            if "spec" in params["snare"] and isinstance(params["snare"]["spec"], dict):
+                if key in params["snare"]["spec"]:
+                    try:
+                        return float(params["snare"]["spec"][key])
+                    except (TypeError, ValueError):
+                        pass
+        # Try flat: params["snare.spec.key"]
+        flat_key = f"snare.spec.{key}"
+        val = get_param(params, flat_key, default)
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+    
+    # Get spec values
+    tune_hz = get_spec("tune_hz", 200.0)
+    tone_decay_ms = get_spec("tone_decay_ms", 150.0)
+    pitch_env_st = get_spec("pitch_env_st", 12.0)
+    snare_level = get_spec("snare_level", 0.6)
+    noise_decay_ms = get_spec("noise_decay_ms", 250.0)
+    wire_filter_hz = get_spec("wire_filter_hz", 5000.0)
+    snap_attack_ms = get_spec("snap_attack_ms", 1.0)
+    hardness = get_spec("hardness", 0.5)
+    box_cut_db = get_spec("box_cut_db", -6.0)
+    box_cut_hz = get_spec("box_cut_hz", 500.0)
+    
+    # Clamp to safe ranges
+    tune_hz = max(120.0, min(250.0, tune_hz))
+    tone_decay_ms = max(50.0, min(400.0, tone_decay_ms))
+    pitch_env_st = max(0.0, min(24.0, pitch_env_st))
+    snare_level = max(0.0, min(1.0, snare_level))
+    noise_decay_ms = max(100.0, min(600.0, noise_decay_ms))
+    wire_filter_hz = max(1000.0, min(10000.0, wire_filter_hz))
+    snap_attack_ms = max(0.0, min(10.0, snap_attack_ms))
+    hardness = max(0.0, min(1.0, hardness))
+    box_cut_db = max(-15.0, min(0.0, box_cut_db))
+    box_cut_hz = max(400.0, min(600.0, box_cut_hz))
+    
+    # Check if user already provided these params
+    def has_user(key: str) -> bool:
+        keys = key.split(".")
+        current = params
+        for k in keys:
+            if not isinstance(current, dict) or k not in current:
+                return False
+            current = current[k]
+        return True
+    
+    # Map to internal params (only if user didn't provide them)
+    
+    # Body/Shell layer (tonal head)
+    # Map: body ~= shell
+    if not has_user("snare.shell.amp.decay_ms"):
+        implied.setdefault("snare", {}).setdefault("shell", {}).setdefault("amp", {})["decay_ms"] = tone_decay_ms
+    if not has_user("snare.shell.amp.attack_ms"):
+        implied.setdefault("snare", {}).setdefault("shell", {}).setdefault("amp", {})["attack_ms"] = snap_attack_ms
+    if not has_user("snare.shell.amp.release_ms"):
+        implied.setdefault("snare", {}).setdefault("shell", {}).setdefault("amp", {})["release_ms"] = 50.0
+    
+    # Pitch controls for body/shell
+    if not has_user("snare.shell.pitch_hz"):
+        implied.setdefault("snare", {}).setdefault("shell", {})["pitch_hz"] = tune_hz
+    if not has_user("snare.shell.pitch_env_st"):
+        implied.setdefault("snare", {}).setdefault("shell", {})["pitch_env_st"] = pitch_env_st
+    if not has_user("snare.shell.pitch_decay_ms"):
+        # Use min(tone_decay_ms, 80ms) for pitch decay
+        implied.setdefault("snare", {}).setdefault("shell", {})["pitch_decay_ms"] = min(tone_decay_ms, 80.0)
+    
+    # Wires layer
+    if not has_user("snare.wires.amp.decay_ms"):
+        implied.setdefault("snare", {}).setdefault("wires", {}).setdefault("amp", {})["decay_ms"] = noise_decay_ms
+    if not has_user("snare.wires.amp.attack_ms"):
+        implied.setdefault("snare", {}).setdefault("wires", {}).setdefault("amp", {})["attack_ms"] = 0.0
+    if not has_user("snare.wires.amp.release_ms"):
+        implied.setdefault("snare", {}).setdefault("wires", {}).setdefault("amp", {})["release_ms"] = 90.0
+    
+    # Wire filter
+    if not has_user("snare.wires.filter_hz"):
+        implied.setdefault("snare", {}).setdefault("wires", {})["filter_hz"] = wire_filter_hz
+    
+    # Wires gain_db from snare_level (0..1 -> -18dB..+3dB perceptual curve)
+    if not has_user("snare.wires.gain_db"):
+        # Perceptual curve: 0.0 -> -18dB, 0.5 -> -6dB, 1.0 -> +3dB
+        implied.setdefault("snare", {}).setdefault("wires", {})["gain_db"] = -18.0 + (snare_level ** 1.5) * 21.0
+    
+    # Snap layer (exciter_body + exciter_air)
+    # Map: snap ~= exciter_body + exciter_air
+    if not has_user("snare.exciter_body.amp.decay_ms"):
+        # Very short decay for snap (~5ms)
+        implied.setdefault("snare", {}).setdefault("exciter_body", {}).setdefault("amp", {})["decay_ms"] = 5.0
+    if not has_user("snare.exciter_body.amp.attack_ms"):
+        implied.setdefault("snare", {}).setdefault("exciter_body", {}).setdefault("amp", {})["attack_ms"] = snap_attack_ms
+    if not has_user("snare.exciter_body.amp.release_ms"):
+        implied.setdefault("snare", {}).setdefault("exciter_body", {}).setdefault("amp", {})["release_ms"] = 5.0
+    
+    if not has_user("snare.exciter_air.amp.decay_ms"):
+        # Very short decay for snap (~3ms)
+        implied.setdefault("snare", {}).setdefault("exciter_air", {}).setdefault("amp", {})["decay_ms"] = 3.0
+    if not has_user("snare.exciter_air.amp.attack_ms"):
+        implied.setdefault("snare", {}).setdefault("exciter_air", {}).setdefault("amp", {})["attack_ms"] = snap_attack_ms
+    if not has_user("snare.exciter_air.amp.release_ms"):
+        implied.setdefault("snare", {}).setdefault("exciter_air", {}).setdefault("amp", {})["release_ms"] = 5.0
+    
+    # Snap gain_db (subtle but critical, ~-6dB baseline)
+    if not has_user("snare.exciter_body.gain_db"):
+        implied.setdefault("snare", {}).setdefault("exciter_body", {})["gain_db"] = -6.0
+    if not has_user("snare.exciter_air.gain_db"):
+        implied.setdefault("snare", {}).setdefault("exciter_air", {})["gain_db"] = -6.0
+    
+    # Hardness (transient saturation on snap)
+    if not has_user("snare.snap.hardness"):
+        implied.setdefault("snare", {}).setdefault("snap", {})["hardness"] = hardness
+    
+    # Box cut notch
+    if not has_user("snare.box_cut.hz"):
+        implied.setdefault("snare", {}).setdefault("box_cut", {})["hz"] = box_cut_hz
+    if not has_user("snare.box_cut.db"):
+        implied.setdefault("snare", {}).setdefault("box_cut", {})["db"] = box_cut_db
+    
+    return implied
+
+
 # 4x4 Hadamard (normalized), delay i receives sum_j H[i,j] * d_j
 _HADAMARD_4 = 0.5 * torch.tensor(
     [[1, 1, 1, 1], [1, -1, 1, -1], [1, 1, -1, -1], [1, -1, -1, 1]], dtype=torch.float32
@@ -110,20 +256,59 @@ class SnareEngine:
         num_samples = int(duration * self.sample_rate)
         t = torch.linspace(0, duration, num_samples)
 
+        # Apply spec param mapping if spec params exist
+        spec_implied = resolve_snare_spec_params(params)
+        if spec_implied:
+            # Deep merge spec-implied params into params (user params still win)
+            import copy
+            def _deep_merge_spec(base: dict, override: dict) -> dict:
+                result = copy.deepcopy(base)
+                for key, value in override.items():
+                    if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                        result[key] = _deep_merge_spec(result[key], value)
+                    else:
+                        # Only add if key doesn't exist (user params win)
+                        if key not in result:
+                            result[key] = copy.deepcopy(value)
+                return result
+            params = _deep_merge_spec(params, spec_implied)
+
         tone = params.get("tone", 0.5)
         wire_amt = params.get("wire", 0.5)
         crack_amt = params.get("crack", 0.5)
         body_amt = params.get("body", 0.5)
 
-        fund_freq = 150.0 + (tone * 150.0)
+        # Use spec pitch if available, otherwise fall back to macro
+        shell_pitch_hz = get_param(params, "snare.shell.pitch_hz", None)
+        if shell_pitch_hz is not None:
+            fund_freq = shell_pitch_hz
+        else:
+            fund_freq = 150.0 + (tone * 150.0)
         for d in self.delays:
             d.reset()
         for lp in self._lpfs:
             lp.reset()
 
         # ---------- Exciter: body and air (explicit layers) ----------
-        osc_body = Oscillator.triangle(fund_freq, duration, self.sample_rate)
-        osc_body = (osc_body * torch.exp(-t * 20)).float()
+        # Use spec pitch envelope if available
+        shell_pitch_env_st = get_param(params, "snare.shell.pitch_env_st", None)
+        shell_pitch_decay_ms = get_param(params, "snare.shell.pitch_decay_ms", None)
+        
+        if shell_pitch_env_st is not None and shell_pitch_decay_ms is not None:
+            # Spec mode: explicit pitch envelope
+            start_freq = fund_freq * (2.0 ** (shell_pitch_env_st / 12.0))
+            end_freq = fund_freq
+            pitch_decay_s = shell_pitch_decay_ms / 1000.0
+            # Generate pitch envelope
+            pitch_env = end_freq + (start_freq - end_freq) * torch.exp(-t / pitch_decay_s)
+            # Use phase accumulator for continuous phase
+            phase = torch.cumsum(pitch_env / self.sample_rate, dim=0) * 2 * np.pi
+            osc_body = torch.sin(phase)
+        else:
+            # Legacy mode: fixed frequency with exponential decay
+            osc_body = Oscillator.triangle(fund_freq, duration, self.sample_rate)
+            osc_body = (osc_body * torch.exp(-t * 20)).float()
+        
         osc_air = (torch.rand_like(t) * 2 - 1) * torch.exp(-t * 50)
         osc_air = osc_air.float()
 
@@ -187,6 +372,12 @@ class SnareEngine:
         if n_sweep < num_samples:
             tail_bp = Filter.bandpass(noise[n_sweep:], self.sample_rate, 3500.0, q=0.8)
             wires_sig[n_sweep:] = tail_bp
+        
+        # Apply wire filter HPF if spec param exists
+        wire_filter_hz = get_param(params, "snare.wires.filter_hz", None)
+        if wire_filter_hz is not None:
+            wires_sig = Filter.highpass(wires_sig, self.sample_rate, wire_filter_hz, q=0.707)
+        
         wire_decay_t = 0.2 + (wire_amt * 0.3)
         wire_env = torch.exp(-t / wire_decay_t)
         ghost_floor = 0.08
@@ -208,6 +399,25 @@ class SnareEngine:
         }
         exciter_body = (osc_body * _trim_env(envs["exciter_body"], num_samples)).float()
         exciter_air = (osc_air * _trim_env(envs["exciter_air"], num_samples)).float()
+        
+        # Apply hardness saturation on snap layer (exciter_body + exciter_air)
+        snap_hardness = get_param(params, "snare.snap.hardness", None)
+        if snap_hardness is not None and snap_hardness > 0:
+            # Combine exciter layers for snap bus
+            snap_bus = exciter_body + exciter_air
+            # Pre-emphasis -> saturation -> de-emphasis
+            drive = 1.0 + (snap_hardness * 2.0)
+            # Pre-emphasis: boost highs slightly (HPF at ~3kHz)
+            snap_pe = Filter.highpass(snap_bus, self.sample_rate, 3000.0, q=0.5) * (snap_hardness * 0.3) + snap_bus
+            snap_pe = snap_pe * drive
+            # Saturation (tanh)
+            snap_sat = torch.tanh(snap_pe)
+            # De-emphasis: subtract some high boost
+            snap_de = snap_sat - Filter.highpass(snap_sat, self.sample_rate, 3000.0, q=0.5) * (snap_hardness * 0.2)
+            # Split back (approximate: apply same ratio to both)
+            exciter_body = snap_de * (exciter_body / (snap_bus + 1e-12))
+            exciter_air = snap_de * (exciter_air / (snap_bus + 1e-12))
+        
         shell_layer = (shell_out * _trim_env(envs["shell"], num_samples)).float()
         wires_layer = (wires_out * _trim_env(envs["wires"], num_samples)).float()
         room_layer = (room_out * _trim_env(envs["room"], num_samples)).float()
@@ -231,6 +441,13 @@ class SnareEngine:
         # Current: wires_out already has wire_amt in it. So we pass wires_layer and default 0 dB; level is baked in.
         # To let fader override we use gain_db 0 and wires_layer has wire_amt baked in. Good.
         master, _ = mixer.mix(params, "snare", default_specs)
+
+        # ---------- Box cut notch (post-mix, pre-downsample) ----------
+        box_cut_hz = get_param(params, "snare.box_cut.hz", None)
+        box_cut_db = get_param(params, "snare.box_cut.db", None)
+        if box_cut_hz is not None and box_cut_db is not None and box_cut_db < 0:
+            # Apply notch filter (box cut)
+            master = Effects.peaking_notch(master, self.sample_rate, box_cut_hz, box_cut_db, q=1.5)
 
         # Master HPF
         master = Filter.highpass(master, self.sample_rate, 80.0)
