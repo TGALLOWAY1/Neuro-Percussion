@@ -298,7 +298,40 @@ class KickEngine:
         # Split into sub (low) and click (high) for per-layer control
         crossover_hz = 120.0
         sub_audio = Filter.lowpass(signal_a, self.sample_rate, crossover_hz, q=0.707)
-        click_audio = Filter.highpass(signal_a, self.sample_rate, crossover_hz, q=0.707)
+        click_audio_fm = Filter.highpass(signal_a, self.sample_rate, crossover_hz, q=0.707)
+        
+        # ---------- Click layer: filtered noise burst (spec mode) or FM-derived (legacy) ----------
+        click_filter_hz = get_param(params, "kick.click.filter_hz", None)
+        hardness = get_param(params, "kick.click.hardness", None)
+        
+        if click_filter_hz is not None:
+            # Spec mode: generate click as filtered noise burst (0-25ms)
+            click_duration_s = 0.025  # 25ms max
+            click_samples = int(click_duration_s * self.sample_rate)
+            click_noise = torch.randn(click_samples, dtype=torch.float32)
+            # Apply HPF at click_filter_hz
+            click_audio = Filter.highpass(click_noise, self.sample_rate, click_filter_hz, q=0.707)
+            
+            # Apply hardness saturation (transient-only)
+            if hardness is not None and hardness > 0:
+                # Pre-emphasis -> saturation -> de-emphasis
+                drive = 1.0 + (hardness * 2.0)
+                # Pre-emphasis: boost highs slightly
+                click_pe = Filter.highpass(click_audio, self.sample_rate, click_filter_hz * 0.7, q=0.5) * (hardness * 0.3) + click_audio
+                click_pe = click_pe * drive
+                # Saturation (tanh)
+                click_sat = torch.tanh(click_pe)
+                # De-emphasis: subtract some high boost
+                click_audio = click_sat - Filter.highpass(click_sat, self.sample_rate, click_filter_hz * 0.7, q=0.5) * (hardness * 0.2)
+            
+            # Pad or trim to match signal_a length
+            if click_audio.shape[-1] < signal_a.shape[-1]:
+                click_audio = torch.nn.functional.pad(click_audio, (0, signal_a.shape[-1] - click_audio.shape[-1]))
+            else:
+                click_audio = click_audio[:signal_a.shape[-1]]
+        else:
+            # Legacy mode: use FM-derived click
+            click_audio = click_audio_fm
 
         # ---------- Knock (damped sine, speaker knock) ----------
         freq_norm = get_param(params, "kick.knock.freq_norm", 0.5)
@@ -359,6 +392,16 @@ class KickEngine:
         click_audio = (click_audio * trim_env(click_env, n)).float()
         knock_audio = (knock_audio * trim_env(knock_env, n)).float()
         room_audio = (room_audio * trim_env(room_env, n)).float()
+        
+        # ---------- Body drive_fold (oversampled saturation on sub layer) ----------
+        drive_fold = get_param(params, "kick.sub.drive_fold", 0.0)
+        if drive_fold > 0:
+            # Apply drive with oversampling to prevent aliasing
+            # We're already at 4x oversample, so apply saturation then lowpass
+            drive = 1.0 + (drive_fold * 2.0)
+            sub_audio = torch.tanh(sub_audio * drive)
+            # Lowpass to remove aliasing (cutoff at ~20kHz at oversampled rate)
+            sub_audio = Filter.lowpass(sub_audio, self.sample_rate, 20000.0, q=0.707)
 
         # ---------- LayerMixer: gains/mutes, sum ----------
         mixer = LayerMixer()
@@ -374,9 +417,27 @@ class KickEngine:
         }
         master, stems = mixer.mix(params, "kick", default_specs)
 
-        # Saturation (preserve current behavior)
-        drive = 1.0 + (click_amount * 0.5)
-        master = torch.tanh(master * drive)
+        # ---------- EQ Scoop (post-mix, pre-downsample) ----------
+        eq_scoop_hz = get_param(params, "kick.eq.scoop_hz", None)
+        eq_scoop_db = get_param(params, "kick.eq.scoop_db", None)
+        if eq_scoop_hz is not None and eq_scoop_db is not None and eq_scoop_db < 0:
+            # Apply notch filter (scoop)
+            master = Filter.peaking_notch(master, self.sample_rate, eq_scoop_hz, eq_scoop_db, q=1.0)
+        
+        # ---------- Compressor (post-mix, pre-downsample) ----------
+        comp_ratio = get_param(params, "kick.comp.ratio", None)
+        comp_attack_ms = get_param(params, "kick.comp.attack_ms", None)
+        comp_release_ms = get_param(params, "kick.comp.release_ms", None)
+        if comp_ratio is not None and comp_attack_ms is not None and comp_release_ms is not None:
+            master = Filter.compressor(
+                master, self.sample_rate, comp_ratio, comp_attack_ms, comp_release_ms, threshold_db=-12.0
+            )
+
+        # Saturation (preserve current behavior, but only if not using spec hardness)
+        if get_param(params, "kick.click.hardness", None) is None:
+            # Legacy mode: use click_amount for saturation
+            drive = 1.0 + (click_amount * 0.5)
+            master = torch.tanh(master * drive)
 
         # Downsample
         master = Filter.lowpass(master, self.sample_rate, self.target_sr / 2.0 - 1000)
