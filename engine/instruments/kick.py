@@ -355,7 +355,7 @@ class KickEngine:
         knock_audio = knock_audio.float()
 
         # ---------- Room (Layer B delayed) ----------
-        # Gate: skip compute when disabled (not just mix=0)
+        # Gating: RESEARCH_GUIDANCE room.enabled=false must skip compute (not just mix=0)
         room_enabled = get_param(params, "kick.room.enabled", False)
         if room_enabled:
             signal_b = self.layer_b.render(

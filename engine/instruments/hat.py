@@ -142,7 +142,8 @@ def resolve_hat_spec_params(params: dict) -> dict:
     if not has_user("hat.chick.amp.decay_ms"):
         implied.setdefault("hat", {}).setdefault("chick", {}).setdefault("amp", {})["decay_ms"] = 5.0
     
-    # Choke group (store as param for render tool to use)
+    # Choke group (RESEARCH_GUIDANCE: closed hat must cut open tail; host stops open voice on closed trigger)
+    # Backend ensures closed hat uses short decay (closed_decay_ms) so tail is cut when host switches to closed
     if not has_user("hat.choke_group"):
         implied.setdefault("hat", {})["choke_group"] = bool(choke_group > 0.5)
     

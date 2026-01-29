@@ -345,20 +345,19 @@ class SnareEngine:
         logger.debug(f"[SNARE RENDER] FDN feedback_gain: {feedback_gain} (body_amt={body_amt})")
         logger.debug(f"[SNARE RENDER] Delay lengths (samples): {delay_lens.tolist()}")
         
-        # Check for explicit feedback control
-        explicit_feedback = get_param(params, "snare.shell.feedback", None)
-        if explicit_feedback is not None:
-            feedback_gain = float(explicit_feedback)
-            logger.debug(f"[SNARE RENDER] Using explicit feedback: {feedback_gain}")
-        
-        # Check for repeat mode
+        # Check for repeat mode first (gating: RESEARCH_GUIDANCE one-shot repeat suppression)
         repeat_mode = get_param(params, "snare.repeatMode", "oneshot")
         logger.debug(f"[SNARE RENDER] Repeat mode: {repeat_mode}")
-        
-        # For oneshot mode, disable feedback by default
-        if repeat_mode == "oneshot" and explicit_feedback is None:
+
+        # One-shot MUST have no repeats: feedback=0 and FDN bypassed (override any explicit feedback)
+        if repeat_mode == "oneshot":
             feedback_gain = 0.0
-            logger.debug(f"[SNARE RENDER] Oneshot mode: feedback disabled (was {0.85 + (body_amt * 0.11)})")
+            logger.debug(f"[SNARE RENDER] Oneshot mode: feedback forced to 0 (gating rule)")
+        else:
+            explicit_feedback = get_param(params, "snare.shell.feedback", None)
+            if explicit_feedback is not None:
+                feedback_gain = float(explicit_feedback)
+                logger.debug(f"[SNARE RENDER] Using explicit feedback: {feedback_gain}")
 
         # Skip FDN delay processing when feedback=0 (oneshot mode optimization)
         if feedback_gain == 0.0:
@@ -439,7 +438,7 @@ class SnareEngine:
         wires_out = wires_out.float()
 
         # ---------- Room (optional send from shell) ----------
-        # Check if room is explicitly enabled
+        # Gating: RESEARCH_GUIDANCE room.enabled=false must skip compute (not just mix=0)
         room_enabled = get_param(params, "snare.room.enabled", False)
         room_mix = get_param(params, "snare.room.mix", 0.15)
         logger.debug(f"[SNARE RENDER] Room enabled: {room_enabled}, mix: {room_mix}")
@@ -447,7 +446,8 @@ class SnareEngine:
         if room_enabled:
             room_out = Filter.lowpass(shell_out, self.sample_rate, 800.0, q=0.707) * room_mix
         else:
-            room_out = torch.zeros_like(shell_out)  # Disabled by default
+            # Skip compute: do not run Filter.lowpass or any room DSP
+            room_out = torch.zeros_like(shell_out)
         room_out = room_out.float()
 
         # ---------- Per-layer AMP ADSR ----------
