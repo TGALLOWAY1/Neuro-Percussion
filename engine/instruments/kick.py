@@ -223,7 +223,9 @@ class FMLayer:
         noise_mod = torch.randn_like(t)
         inst_freq = pitch_env + (noise_mod * fm_env * 5000.0)
         inst_freq = torch.abs(inst_freq)
+        # Phase reset on trigger: cumsum starts at 0, ensuring consistent phase
         phase = torch.cumsum(inst_freq / self.sample_rate, dim=0) * 2 * np.pi
+        # Note: phase always starts at 0 on each render (torch.cumsum initializes at 0)
         return torch.sin(phase) * amp_env
 
 
@@ -312,15 +314,16 @@ class KickEngine:
             # Apply HPF at click_filter_hz
             click_audio = Filter.highpass(click_noise, self.sample_rate, click_filter_hz, q=0.707)
             
-            # Apply hardness saturation (transient-only)
+            # Apply hardness saturation (transient-only) with oversampling
             if hardness is not None and hardness > 0:
                 # Pre-emphasis -> saturation -> de-emphasis
                 drive = 1.0 + (hardness * 2.0)
                 # Pre-emphasis: boost highs slightly
                 click_pe = Filter.highpass(click_audio, self.sample_rate, click_filter_hz * 0.7, q=0.5) * (hardness * 0.3) + click_audio
                 click_pe = click_pe * drive
-                # Saturation (tanh)
-                click_sat = torch.tanh(click_pe)
+                # Saturation (tanh) with oversampling wrapper for anti-aliasing
+                from engine.dsp.oversample import apply_tanh_distortion
+                click_sat = apply_tanh_distortion(click_pe, self.sample_rate, 1.0, oversample_factor=1)
                 # De-emphasis: subtract some high boost
                 click_audio = click_sat - Filter.highpass(click_sat, self.sample_rate, click_filter_hz * 0.7, q=0.5) * (hardness * 0.2)
             
@@ -403,12 +406,13 @@ class KickEngine:
         # ---------- Body drive_fold (oversampled saturation on sub layer) ----------
         drive_fold = get_param(params, "kick.sub.drive_fold", 0.0)
         if drive_fold > 0:
-            # Apply drive with oversampling to prevent aliasing
-            # We're already at 4x oversample, so apply saturation then lowpass
+            # Apply drive with oversampling wrapper (ensures proper anti-aliasing)
+            # We're already at 4x oversample, but wrapper handles anti-alias filter + downsampling
+            from engine.dsp.oversample import apply_tanh_distortion
             drive = 1.0 + (drive_fold * 2.0)
-            sub_audio = torch.tanh(sub_audio * drive)
-            # Lowpass to remove aliasing (cutoff at ~20kHz at oversampled rate)
-            sub_audio = Filter.lowpass(sub_audio, self.sample_rate, 20000.0, q=0.707)
+            # Process at oversampled rate, then anti-alias and downsample
+            sub_audio = apply_tanh_distortion(sub_audio, self.sample_rate, drive, oversample_factor=1)
+            # Note: factor=1 because we're already at 4x oversample; wrapper still applies anti-alias
 
         # ---------- LayerMixer: gains/mutes, sum ----------
         mixer = LayerMixer()
@@ -442,9 +446,10 @@ class KickEngine:
 
         # Saturation (preserve current behavior, but only if not using spec hardness)
         if get_param(params, "kick.click.hardness", None) is None:
-            # Legacy mode: use click_amount for saturation
+            # Legacy mode: use click_amount for saturation (with oversampling wrapper)
+            from engine.dsp.oversample import apply_tanh_distortion
             drive = 1.0 + (click_amount * 0.5)
-            master = torch.tanh(master * drive)
+            master = apply_tanh_distortion(master, self.sample_rate, drive, oversample_factor=1)
 
         # Downsample
         master = Filter.lowpass(master, self.sample_rate, self.target_sr / 2.0 - 1000)

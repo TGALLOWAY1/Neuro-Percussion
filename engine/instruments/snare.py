@@ -315,7 +315,7 @@ class SnareEngine:
             pitch_decay_s = shell_pitch_decay_ms / 1000.0
             # Generate pitch envelope
             pitch_env = end_freq + (start_freq - end_freq) * torch.exp(-t / pitch_decay_s)
-            # Use phase accumulator for continuous phase
+            # Phase reset on trigger: cumsum starts at 0, ensuring consistent phase for layering
             phase = torch.cumsum(pitch_env / self.sample_rate, dim=0) * 2 * np.pi
             osc_body = torch.sin(phase)
             # Apply amplitude decay envelope (similar to legacy)
@@ -462,7 +462,7 @@ class SnareEngine:
         exciter_body = (osc_body * _trim_env(envs["exciter_body"], num_samples)).float()
         exciter_air = (osc_air * _trim_env(envs["exciter_air"], num_samples)).float()
         
-        # Apply hardness saturation on snap layer (exciter_body + exciter_air)
+        # Apply hardness saturation on snap layer (exciter_body + exciter_air) with oversampling
         snap_hardness = get_param(params, "snare.snap.hardness", None)
         if snap_hardness is not None and snap_hardness > 0:
             # Combine exciter layers for snap bus
@@ -472,8 +472,9 @@ class SnareEngine:
             # Pre-emphasis: boost highs slightly (HPF at ~3kHz)
             snap_pe = Filter.highpass(snap_bus, self.sample_rate, 3000.0, q=0.5) * (snap_hardness * 0.3) + snap_bus
             snap_pe = snap_pe * drive
-            # Saturation (tanh)
-            snap_sat = torch.tanh(snap_pe)
+            # Saturation (tanh) with oversampling to prevent aliasing
+            from engine.dsp.oversample import apply_tanh_distortion
+            snap_sat = apply_tanh_distortion(snap_pe, self.sample_rate, 1.0, oversample_factor=4)
             # De-emphasis: subtract some high boost
             snap_de = snap_sat - Filter.highpass(snap_sat, self.sample_rate, 3000.0, q=0.5) * (snap_hardness * 0.2)
             # Split back (approximate: apply same ratio to both)

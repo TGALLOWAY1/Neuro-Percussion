@@ -1,3 +1,9 @@
+"""
+Audio filters using torchaudio biquad implementations.
+All filters are IIR (minimum-phase) to avoid pre-ringing on transients.
+Linear-phase filters are NOT used to prevent "sucking" artifacts before transients.
+"""
+
 import torch
 import torchaudio.functional as F
 import numpy as np
@@ -5,20 +11,30 @@ import numpy as np
 class Filter:
     @staticmethod
     def lowpass(waveform: torch.Tensor, sample_rate: int, cutoff_freq: float, q: float = 0.707) -> torch.Tensor:
-        """Apply a LowPass Biquad filter."""
+        """
+        Apply a LowPass Biquad filter (minimum-phase IIR).
+        Safe for transient processing - no pre-ringing.
+        """
         # Ensure cutoff is within Nyquist
         cutoff_freq = min(cutoff_freq, sample_rate / 2 - 1)
         return F.lowpass_biquad(waveform, sample_rate, cutoff_freq, q)
 
     @staticmethod
     def highpass(waveform: torch.Tensor, sample_rate: int, cutoff_freq: float, q: float = 0.707) -> torch.Tensor:
-        """Apply a HighPass Biquad filter."""
+        """
+        Apply a HighPass Biquad filter (minimum-phase IIR).
+        Safe for transient processing - no pre-ringing.
+        Used for click layer filtering and HPF stages.
+        """
         cutoff_freq = min(cutoff_freq, sample_rate / 2 - 1)
         return F.highpass_biquad(waveform, sample_rate, cutoff_freq, q)
 
     @staticmethod
     def bandpass(waveform: torch.Tensor, sample_rate: int, center_freq: float, q: float = 0.707) -> torch.Tensor:
-        """Apply a BandPass Biquad filter."""
+        """
+        Apply a BandPass Biquad filter (minimum-phase IIR).
+        Safe for transient processing - no pre-ringing.
+        """
         center_freq = min(center_freq, sample_rate / 2 - 1)
         return F.bandpass_biquad(waveform, sample_rate, center_freq, q)
     

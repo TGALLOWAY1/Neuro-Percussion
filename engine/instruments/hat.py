@@ -187,14 +187,16 @@ def _trim_env(env: torch.Tensor, length: int) -> torch.Tensor:
 
 
 def _apply_dirt_wavefold(mix: torch.Tensor, dirt: float, sample_rate: int) -> torch.Tensor:
-    """Dirt as pre-emphasis -> saturation/wavefold -> de-emphasis. No bitcrush."""
+    """Dirt as pre-emphasis -> saturation/wavefold -> de-emphasis. No bitcrush. Uses oversampling to prevent aliasing."""
     if dirt <= 0:
         return mix
     drive = 1.0 + (dirt * 2.0)
     # Pre-emphasis: simple high-shelf-ish (boost highs)
     mix_pe = Filter.highpass(mix, sample_rate, 4000.0, q=0.5) * (dirt * 0.5) + mix
     mix_pe = mix_pe * drive
-    mix_sat = torch.tanh(mix_pe)
+    # Saturation (tanh) with oversampling to prevent aliasing
+    from engine.dsp.oversample import apply_tanh_distortion
+    mix_sat = apply_tanh_distortion(mix_pe, sample_rate, 1.0, oversample_factor=4)
     # De-emphasis: compensate high boost
     mix_out = mix_sat - Filter.highpass(mix_sat, sample_rate, 4000.0, q=0.5) * (dirt * 0.3)
     return mix_out
