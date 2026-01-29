@@ -360,44 +360,49 @@ class SnareEngine:
             feedback_gain = 0.0
             logger.debug(f"[SNARE RENDER] Oneshot mode: feedback disabled (was {0.85 + (body_amt * 0.11)})")
 
-        # Increased block size for better performance (reduces LPF calls)
-        # Original: 32 samples = 6000 LPF calls, New: 1024 samples = ~188 LPF calls
-        block_size = 1024
-        shell_out = torch.zeros(num_samples, dtype=torch.float32)
-        H = _HADAMARD_4
+        # Skip FDN delay processing when feedback=0 (oneshot mode optimization)
+        if feedback_gain == 0.0:
+            # No feedback: output is just the input (no delay processing needed)
+            shell_out = exciter_clipped.clone()
+            logger.debug(f"[SNARE RENDER] Feedback=0: skipping FDN delay processing")
+        else:
+            # FDN with feedback: process delays
+            block_size = 1024
+            shell_out = torch.zeros(num_samples, dtype=torch.float32)
+            H = _HADAMARD_4
 
-        for b in range(0, num_samples, block_size):
-            end = min(b + block_size, num_samples)
-            chunk_len = end - b
-            in_chunk = exciter_clipped[b:end]
+            for b in range(0, num_samples, block_size):
+                end = min(b + block_size, num_samples)
+                chunk_len = end - b
+                in_chunk = exciter_clipped[b:end]
 
-            # Read from delays
-            d_sigs = [
-                self.delays[i].read_block(float(delay_lens[i].item()), chunk_len)
-                for i in range(4)
-            ]
-            # Hadamard: out_i = sum_j H[i,j] * d_j
-            # Vectorize Hadamard computation using tensor operations
-            d_sigs_tensor = torch.stack(d_sigs)  # Shape: (4, chunk_len)
-            H_expanded = H.unsqueeze(-1)  # Shape: (4, 4, 1)
-            # Compute: u[i] = sum_j H[i,j] * d_sigs[j] for all i
-            u_all = torch.sum(H_expanded * d_sigs_tensor.unsqueeze(0), dim=1)  # Shape: (4, chunk_len)
-            
-            # Compute input amplitude once for the chunk
-            input_amp = float(torch.max(torch.abs(in_chunk))) if chunk_len > 0 else 0.0
-            lpf_cutoff = 2000.0 + (input_amp * 8000.0)
-            
-            # Process all 4 LPFs in parallel (vectorized)
-            out_blocks = []
-            for i in range(4):
-                u = u_all[i]
-                u = self._lpfs[i].process(u.unsqueeze(0), lpf_cutoff).squeeze(0)
-                u = Effects.soft_clip(u, threshold_db=-1.0)
-                mix_sig = in_chunk + (u * feedback_gain)
-                out_blocks.append(mix_sig)
-                self.delays[i].write_block(mix_sig)
+                # Read from delays
+                d_sigs = [
+                    self.delays[i].read_block(float(delay_lens[i].item()), chunk_len)
+                    for i in range(4)
+                ]
+                # Hadamard: out_i = sum_j H[i,j] * d_j
+                # Vectorize Hadamard computation using tensor operations
+                d_sigs_tensor = torch.stack(d_sigs)  # Shape: (4, chunk_len)
+                H_expanded = H.unsqueeze(-1)  # Shape: (4, 4, 1)
+                # Compute: u[i] = sum_j H[i,j] * d_sigs[j] for all i
+                u_all = torch.sum(H_expanded * d_sigs_tensor.unsqueeze(0), dim=1)  # Shape: (4, chunk_len)
+                
+                # Compute input amplitude once for the chunk
+                input_amp = float(torch.max(torch.abs(in_chunk))) if chunk_len > 0 else 0.0
+                lpf_cutoff = 2000.0 + (input_amp * 8000.0)
+                
+                # Process all 4 LPFs in parallel (vectorized)
+                out_blocks = []
+                for i in range(4):
+                    u = u_all[i]
+                    u = self._lpfs[i].process(u.unsqueeze(0), lpf_cutoff).squeeze(0)
+                    u = Effects.soft_clip(u, threshold_db=-1.0)
+                    mix_sig = in_chunk + (u * feedback_gain)
+                    out_blocks.append(mix_sig)
+                    self.delays[i].write_block(mix_sig)
 
-            shell_out[b:end] = (out_blocks[0] + out_blocks[1] + out_blocks[2] + out_blocks[3]) / 4.0
+                shell_out[b:end] = (out_blocks[0] + out_blocks[1] + out_blocks[2] + out_blocks[3]) / 4.0
 
         # ---------- Wires: BP sweep 9k -> 3.5k over 50ms + ghost floor ----------
         noise = torch.randn_like(t)

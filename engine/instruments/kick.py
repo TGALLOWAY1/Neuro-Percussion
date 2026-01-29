@@ -352,27 +352,34 @@ class KickEngine:
         knock_audio = knock_audio.float()
 
         # ---------- Room (Layer B delayed) ----------
-        signal_b = self.layer_b.render(
-            duration=duration,
-            start_freq=room_tone_freq,
-            end_freq=room_tone_freq,
-            pitch_decay=1.0,
-            amp_decay=0.2,
-            fm_index_amt=room_air * 0.2,
-            fm_decay=0.1,
-        )
-        block_size = 1024
-        num_blocks = (len(signal_b) + block_size - 1) // block_size
-        signal_b_delayed = torch.zeros_like(signal_b)
-        delay_samples = (distance_ms / 1000.0) * self.sample_rate
-        for i in range(num_blocks):
-            start = i * block_size
-            end = min(start + block_size, len(signal_b))
-            chunk = signal_b[start:end]
-            d_chunk = self.delay_line.read_block(delay_samples, len(chunk))
-            self.delay_line.write_block(chunk)
-            signal_b_delayed[start:end] = d_chunk
-        room_audio = (signal_b_delayed * blend).float()
+        # Gate: skip compute when disabled (not just mix=0)
+        room_enabled = get_param(params, "kick.room.enabled", False)
+        if room_enabled:
+            signal_b = self.layer_b.render(
+                duration=duration,
+                start_freq=room_tone_freq,
+                end_freq=room_tone_freq,
+                pitch_decay=1.0,
+                amp_decay=0.2,
+                fm_index_amt=room_air * 0.2,
+                fm_decay=0.1,
+            )
+            block_size = 1024
+            num_blocks = (len(signal_b) + block_size - 1) // block_size
+            signal_b_delayed = torch.zeros_like(signal_b)
+            delay_samples = (distance_ms / 1000.0) * self.sample_rate
+            for i in range(num_blocks):
+                start = i * block_size
+                end = min(start + block_size, len(signal_b))
+                chunk = signal_b[start:end]
+                d_chunk = self.delay_line.read_block(delay_samples, len(chunk))
+                self.delay_line.write_block(chunk)
+                signal_b_delayed[start:end] = d_chunk
+            room_audio = (signal_b_delayed * blend).float()
+        else:
+            # Skip compute: return zeros (matching signal_a length for mixer)
+            num_samples = signal_a.shape[-1]
+            room_audio = torch.zeros(num_samples, dtype=torch.float32)
 
         # ---------- Per-layer amp ADSR ----------
         sr = self.sample_rate

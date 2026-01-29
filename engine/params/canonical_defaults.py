@@ -80,6 +80,9 @@ ENGINE_DEFAULTS_KICK: Dict[str, Any] = {
             },
             "filter_hz": 6000.0,
         },
+        "room": {
+            "enabled": False,
+        },
     },
     "click_snap": 0.5,
 }

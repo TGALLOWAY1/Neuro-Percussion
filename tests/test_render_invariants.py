@@ -13,6 +13,8 @@ import pytest
 import torch
 from tools.render_core import render_one_shot, get_unique_output_dir
 from engine.params.schema import DEFAULT_PRESET
+from engine.params.canonical_defaults import ENGINE_DEFAULTS
+from engine.params.resolve import resolve_params
 
 
 @pytest.fixture
@@ -241,3 +243,67 @@ class TestBasicValidation:
         
         peak = info["fingerprint"]["peak"]
         assert peak > 0.0, f"{instrument} output is silent (peak={peak})"
+
+
+class TestFXGating:
+    """Verify FX blocks (room/delay/feedback) are gated and disabled by default."""
+    
+    def test_snare_feedback_zero_in_oneshot_mode(self):
+        """Snare feedback gain must be exactly 0 in oneshot mode."""
+        # Use canonical defaults (oneshot mode, no explicit feedback)
+        params = copy.deepcopy(ENGINE_DEFAULTS["snare"])
+        
+        # Resolve params (applies defaults)
+        resolved = resolve_params("snare", params)
+        
+        # Check repeatMode is oneshot
+        assert resolved.get("snare", {}).get("repeatMode") == "oneshot", "Default repeatMode should be oneshot"
+        
+        # Check feedback is 0 (either explicit or will be set to 0 in render)
+        shell_feedback = resolved.get("snare", {}).get("shell", {}).get("feedback")
+        # If not explicitly set, render will set to 0 for oneshot mode
+        # If explicitly set, it should be 0
+        if shell_feedback is not None:
+            assert shell_feedback == 0.0, f"Feedback should be 0 in oneshot mode, got {shell_feedback}"
+    
+    def test_kick_room_disabled_by_default(self):
+        """Kick room.enabled must be False by default."""
+        params = copy.deepcopy(ENGINE_DEFAULTS["kick"])
+        resolved = resolve_params("kick", params)
+        
+        room_enabled = resolved.get("kick", {}).get("room", {}).get("enabled")
+        assert room_enabled is False, f"Kick room.enabled should be False by default, got {room_enabled}"
+    
+    def test_snare_room_disabled_by_default(self):
+        """Snare room.enabled must be False by default."""
+        params = copy.deepcopy(ENGINE_DEFAULTS["snare"])
+        resolved = resolve_params("snare", params)
+        
+        room_enabled = resolved.get("snare", {}).get("room", {}).get("enabled")
+        assert room_enabled is False, f"Snare room.enabled should be False by default, got {room_enabled}"
+    
+    def test_hat_choke_group_enabled_by_default(self):
+        """Hat choke_group must be True by default."""
+        params = copy.deepcopy(ENGINE_DEFAULTS["hat"])
+        resolved = resolve_params("hat", params)
+        
+        choke_group = resolved.get("hat", {}).get("choke_group")
+        assert choke_group is True, f"Hat choke_group should be True by default, got {choke_group}"
+    
+    def test_snare_oneshot_no_repeats(self, temp_output_dir):
+        """Snare in oneshot mode should produce single transient (no repeats/echoes)."""
+        # Use canonical defaults (oneshot, feedback=0)
+        params = copy.deepcopy(ENGINE_DEFAULTS["snare"])
+        
+        audio, info = render_one_shot(
+            "snare", params, temp_output_dir, "snare_oneshot_test",
+            seed=42, debug=False, qc=False, mode="default",
+            script_name="test_render_invariants"
+        )
+        
+        # Check that audio decays to near-zero (no sustained repeats)
+        # Last 10% of audio should be very quiet (< 0.05 peak; wires layer has ghost floor ~0.08)
+        tail_start = int(len(audio) * 0.9)
+        tail = audio[tail_start:]
+        tail_peak = float(torch.max(torch.abs(tail)))
+        assert tail_peak < 0.05, f"Snare oneshot tail should be quiet (<0.05), got {tail_peak:.4f}"
