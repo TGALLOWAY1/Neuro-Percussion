@@ -1,10 +1,10 @@
 """
-Parameter resolution: deep-merge DEFAULT_PRESET with incoming params, then apply macros.
-Incoming params override defaults at any nesting level.
+Parameter resolution: deep-merge canonical ENGINE_DEFAULTS with incoming params, then apply macros.
+Incoming params override defaults at any nesting level. Backend does not silently override canonical defaults.
 If macros exist, compute implied advanced params and merge them (user advanced params still win).
 """
 from typing import Dict, Any
-from engine.params.schema import DEFAULT_PRESET
+from engine.params.canonical_defaults import ENGINE_DEFAULTS
 from engine.params.macros import apply_macros
 
 
@@ -75,8 +75,8 @@ def _safe_merge_implied(base: Dict[str, Any], implied: Dict[str, Any], user_para
 def resolve_params(instrument: str, params: dict) -> dict:
     """
     Resolve params by:
-    1. Starting from DEFAULT_PRESET[instrument]
-    2. Merging incoming params onto it (user params override defaults)
+    1. Starting from ENGINE_DEFAULTS[instrument] (canonical defaults from frontend spec)
+    2. Merging incoming params onto it (user params override defaults; backend does not override)
     3. If macro keys exist, computing implied advanced params via apply_macros()
     4. Merging implied params into merged (but not overwriting explicit user advanced keys)
     
@@ -87,13 +87,12 @@ def resolve_params(instrument: str, params: dict) -> dict:
     Returns:
         Fully resolved params dict with defaults, user params, and macro-implied params.
     """
-    if instrument not in DEFAULT_PRESET:
-        # If instrument not in preset, return params as-is
+    if instrument not in ENGINE_DEFAULTS:
         return params.copy() if params else {}
     
-    defaults = DEFAULT_PRESET[instrument]
+    defaults = ENGINE_DEFAULTS[instrument]
     
-    # Step 1-2: Deep merge defaults with incoming params (user params override defaults)
+    # Step 1-2: Deep merge canonical defaults with incoming params (user params override)
     merged = _deep_merge(defaults, params)
     
     # Step 3: If macros exist, compute implied advanced params

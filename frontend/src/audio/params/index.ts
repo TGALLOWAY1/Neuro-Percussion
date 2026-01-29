@@ -4,6 +4,7 @@
 
 export * from "./types";
 export * from "./ranges";
+export * from "./defaults";
 export { KICK_ENVELOPE_SPEC } from "./spec_kick";
 export { SNARE_ENVELOPE_SPEC } from "./spec_snare";
 export { HAT_ENVELOPE_SPEC } from "./spec_hat";

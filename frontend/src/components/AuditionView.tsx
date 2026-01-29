@@ -7,9 +7,9 @@ import { MacroSlider } from "./MacroSlider";
 import { EnvelopeStrip } from "./envelopes/EnvelopeStrip";
 import { RefreshCw, Play, ThumbsUp, ThumbsDown, Sparkles, Download, Plus, Check } from "lucide-react";
 import { InstrumentType } from "@/types";
-import { getEnvelopeSpec } from "@/audio/params";
-import { mapKickParams, mapSnareParams, mapHatParams } from "@/audio/mapping";
-import { migratePatchToV1, validateCanonicalPatch, type PatchV1 } from "@/audio/patch";
+import { getEnvelopeSpec, getCanonicalEnvelopeDefaults } from "@/audio/params";
+import { hydratePatchToCanonical, mapCanonicalToEngineParams, type CanonicalPatch, type EngineParams } from "@/audio/contract";
+import { validateCanonicalPatch } from "@/audio/patch";
 import clsx from "clsx";
 
 const INSTRUMENTS: InstrumentType[] = ['kick', 'snare', 'hat'];
@@ -74,122 +74,70 @@ export default function AuditionView() {
     const switchInstrument = (inst: InstrumentType) => {
         setInstrument(inst);
         setParams(DEFAULT_PARAMS[inst]);
-        // Reset envelope params to defaults
-        const spec = getEnvelopeSpec(inst);
-        const defaults: Record<string, number> = {};
-        spec.envelopes.forEach((env) => {
-            env.params.forEach((param) => {
-                defaults[param.id] = param.default;
-            });
-        });
+        const defaults = getCanonicalEnvelopeDefaults(inst);
         setEnvelopeParams(defaults);
         setFeedbackSent(null);
-        // Auto-regen with defaults
+        // Auto-regen with defaults (single mapping path)
         requestAnimationFrame(() => {
-            // Migrate kit patch if exists
-            const kitPatch = kit[inst];
-            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
-            
-            const merged = mergeParams(inst, DEFAULT_PARAMS[inst], defaults, migratedPatch);
-            handleGenerate(inst, merged);
+            const engineParams = getEngineParamsForInstrument(inst, DEFAULT_PARAMS[inst], defaults, seed, kit[inst]);
+            handleGenerate(inst, undefined, undefined, engineParams);
         });
     };
 
-    // Merge macro params + envelope params into backend format
-    const mergeParams = (
+    /** Single entry point: canonical patch -> engine params. Only this path reaches the API. */
+    function getEngineParamsForInstrument(
         inst: InstrumentType,
         macroParams: Record<string, number>,
         envParams: Record<string, number>,
-        patch?: PatchV1
-    ): Record<string, any> => {
-        const merged: Record<string, any> = { ...macroParams };
-
-        // Map envelope params to backend format
-        let mapped: Record<string, any> = {};
-        if (inst === "kick") {
-            mapped = mapKickParams(envParams as any);
-        } else if (inst === "snare") {
-            mapped = mapSnareParams(envParams as any);
-            
-            // Apply repeat mode and room settings for snare
-            const repeatMode = patch?.repeatMode || "oneshot";
-            merged["snare"] = merged["snare"] || {};
-            merged["snare"]["repeatMode"] = repeatMode;
-            
-            // Disable FDN feedback for oneshot mode
-            if (repeatMode === "oneshot") {
-                merged["snare"]["shell"] = merged["snare"]["shell"] || {};
-                merged["snare"]["shell"]["feedback"] = 0.0;
-            }
-            
-            // Room layer control
-            const roomEnabled = patch?.roomEnabled || false;
-            merged["snare"]["room"] = merged["snare"]["room"] || {};
-            merged["snare"]["room"]["enabled"] = roomEnabled;
-            if (!roomEnabled) {
-                merged["snare"]["room"]["mute"] = true;
-                merged["snare"]["room"]["gain_db"] = -200.0;
-            }
-        } else if (inst === "hat") {
-            mapped = mapHatParams(envParams as any);
-        }
-
-        // Deep merge mapped params into merged
-        const deepMerge = (target: any, source: any): any => {
-            const result = { ...target };
-            for (const key in source) {
-                if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
-                    result[key] = deepMerge(result[key] || {}, source[key]);
-                } else {
-                    result[key] = source[key];
-                }
-            }
-            return result;
+        seedVal: number,
+        kitPatch?: Record<string, unknown>
+    ) {
+        const patchLike = {
+            schemaVersion: 1,
+            params: macroParams,
+            envelopeParams: envParams,
+            seed: seedVal,
+            repeatMode: (kitPatch?.repeatMode as CanonicalPatch["repeatMode"]) ?? "oneshot",
+            roomEnabled: (kitPatch?.roomEnabled as boolean) ?? false,
         };
-
-        return deepMerge(merged, mapped);
-    };
+        const canonical = hydratePatchToCanonical(patchLike, inst);
+        return mapCanonicalToEngineParams(canonical);
+    }
 
     const handleGenerate = async (
         instOverride?: InstrumentType,
-        paramsOverride?: Record<string, any>,
+        paramsOverride?: Record<string, number>,
         seedOverride?: number,
-        skipEnvelopeMerge = false
+        engineParamsOverride?: EngineParams
     ) => {
-        // Prevent double-triggering: check if we triggered recently
         const now = Date.now();
         const timeSinceLastTrigger = now - lastTriggerTimeRef.current;
-        if (timeSinceLastTrigger < TRIGGER_DEBOUNCE_MS && !skipEnvelopeMerge) {
-            console.debug(`[SNARE] Skipping trigger (${timeSinceLastTrigger}ms since last, min ${TRIGGER_DEBOUNCE_MS}ms)`);
+        if (timeSinceLastTrigger < TRIGGER_DEBOUNCE_MS && !engineParamsOverride) {
+            console.debug(`[Generate] Skipping trigger (${timeSinceLastTrigger}ms since last)`);
             return;
         }
         lastTriggerTimeRef.current = now;
 
-        const instIdx = instOverride || instrument;
-        const currentSeed = seedOverride !== undefined ? seedOverride : seed;
+        const instIdx = instOverride ?? instrument;
+        const currentSeed = seedOverride ?? seed;
+        const macroP = paramsOverride ?? params;
 
-        // Merge params if not already merged
-        let finalParams: Record<string, any>;
-        if (skipEnvelopeMerge && paramsOverride) {
-            finalParams = paramsOverride;
-        } else {
-            const macroP = paramsOverride || params;
-            const envP = envelopeParams;
-            const kitPatch = kit[instIdx];
-            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
-            finalParams = mergeParams(instIdx, macroP, envP, migratedPatch);
-        }
+        const engineParams: EngineParams = engineParamsOverride ?? getEngineParamsForInstrument(
+            instIdx,
+            macroP,
+            envelopeParams,
+            currentSeed,
+            kit[instIdx]
+        );
+        const seedVal = (engineParams as { seed: number }).seed;
 
         setIsLoading(true);
         setFeedbackSent(null);
         try {
-            const blob = await generateAudio(instIdx, finalParams, currentSeed);
+            const blob = await generateAudio(instIdx, engineParams, seedVal);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
-            if (paramsOverride && !skipEnvelopeMerge) {
-                // Only update macro params if provided
-                setParams(paramsOverride);
-            }
+            if (paramsOverride) setParams(paramsOverride);
             if (seedOverride !== undefined) setSeed(seedOverride);
         } catch (err) {
             console.error(err);
@@ -200,19 +148,16 @@ export default function AuditionView() {
 
 
     useEffect(() => {
-        // Initialize envelope params to defaults
-        const spec = getEnvelopeSpec(instrument);
-        const defaults: Record<string, number> = {};
-        spec.envelopes.forEach((env) => {
-            env.params.forEach((param) => {
-                defaults[param.id] = param.default;
-            });
-        });
+        const defaults = getCanonicalEnvelopeDefaults(instrument);
         setEnvelopeParams(defaults);
-        
-        // Initial generate
-        const merged = mergeParams(instrument, DEFAULT_PARAMS[instrument], defaults, undefined);
-        handleGenerate(instrument, merged, seed, true);
+        const engineParams = getEngineParamsForInstrument(
+            instrument,
+            DEFAULT_PARAMS[instrument],
+            defaults,
+            seed,
+            undefined
+        );
+        handleGenerate(instrument, undefined, undefined, engineParams);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -252,26 +197,20 @@ export default function AuditionView() {
     };
 
     const addToKit = () => {
-        // Create V1 patch with schema version
-        const patch: PatchV1 = {
-            schemaVersion: 1,
+        const patchLike = {
+            schemaVersion: 1 as const,
             params: { ...params },
             envelopeParams: { ...envelopeParams },
             seed,
-            // For snare, default to oneshot mode
-            repeatMode: instrument === "snare" ? "oneshot" : undefined,
-            roomEnabled: false, // Default room disabled
+            repeatMode: instrument === "snare" ? "oneshot" as const : undefined,
+            roomEnabled: false,
         };
-        
-        // Validate and warn if issues
-        const warnings = validateCanonicalPatch(patch);
-        if (warnings.length > 0) {
-            console.warn("[PATCH] Validation warnings:", warnings);
-        }
-        
+        const warnings = validateCanonicalPatch(patchLike as Parameters<typeof validateCanonicalPatch>[0]);
+        if (warnings.length > 0) console.warn("[PATCH] Validation warnings:", warnings);
+
         setKit(prev => ({
             ...prev,
-            [instrument]: patch
+            [instrument]: patchLike
         }));
     };
 
@@ -304,11 +243,8 @@ export default function AuditionView() {
         }
         previewTimeoutRef.current = setTimeout(() => {
             const updated = { ...params, [key]: val };
-            const kitPatch = kit[instrument];
-            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
-            const merged = mergeParams(instrument, updated, envelopeParams, migratedPatch);
-            handleGenerate(undefined, merged, undefined, true);
-        }, 300); // 300ms debounce
+            handleGenerate(undefined, updated, undefined);
+        }, 300);
     };
 
     const updateEnvelopeParam = (paramId: string, value: number) => {
@@ -319,26 +255,21 @@ export default function AuditionView() {
         }
         previewTimeoutRef.current = setTimeout(() => {
             const updated = { ...envelopeParams, [paramId]: value };
-            const kitPatch = kit[instrument];
-            const migratedPatch = kitPatch ? migratePatchToV1(kitPatch as any) : undefined;
-            const merged = mergeParams(instrument, params, updated, migratedPatch);
-            handleGenerate(undefined, merged, undefined, true);
-        }, 300); // 300ms debounce
+            handleGenerate(undefined, undefined, undefined);
+        }, 300);
     };
 
     const resetEnvelope = (envelopeId: string) => {
         const spec = getEnvelopeSpec(instrument);
         const envelope = spec.envelopes.find(e => e.id === envelopeId);
+        const defaults = getCanonicalEnvelopeDefaults(instrument);
         if (envelope) {
             const updates: Record<string, number> = {};
             envelope.params.forEach(param => {
-                updates[param.id] = param.default;
+                updates[param.id] = defaults[param.id] ?? param.default;
             });
             setEnvelopeParams(prev => ({ ...prev, ...updates }));
-            // Trigger preview
-            const updated = { ...envelopeParams, ...updates };
-            const merged = mergeParams(instrument, params, updated);
-            handleGenerate(undefined, merged, undefined, true);
+            setTimeout(() => handleGenerate(undefined, undefined, undefined), 0);
         }
     };
 

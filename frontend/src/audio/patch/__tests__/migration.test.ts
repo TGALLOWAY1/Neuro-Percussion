@@ -3,6 +3,8 @@
  */
 
 import { migratePatchToV1, validateCanonicalPatch, type PatchV0, type PatchV1 } from "../migration";
+import { hydratePatchToCanonical } from "../../contract/hydrate";
+import { getCanonicalEnvelopeDefaults } from "../../params";
 
 describe("Patch Migration", () => {
     describe("migratePatchToV1", () => {
@@ -62,6 +64,21 @@ describe("Patch Migration", () => {
 
             expect(v1Patch.params).toEqual({});
             expect(v1Patch.seed).toBe(42);
+        });
+
+        it("legacy -> canonical: migrated patch yields same envelope defaults as new patch", () => {
+            const v0Patch: PatchV0 = {
+                params: { tone: 0.5, wire: 0.4 },
+                seed: 42,
+            };
+            const v1Patch = migratePatchToV1(v0Patch);
+            expect(v1Patch.envelopeParams).toEqual({});
+
+            for (const instrument of ["kick", "snare", "hat"] as const) {
+                const canonical = hydratePatchToCanonical(v1Patch, instrument);
+                const expectedEnvelope = getCanonicalEnvelopeDefaults(instrument);
+                expect(canonical.envelopeParams).toEqual(expectedEnvelope);
+            }
         });
     });
 
