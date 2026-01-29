@@ -38,6 +38,7 @@ export const HAT_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 3.0,
                     step: 0.1,
                     default: 1.2,
+                    experimental: true,
                 },
                 {
                     id: "choke",
@@ -149,6 +150,7 @@ export const HAT_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 40,
                     step: 1,
                     default: 10,
+                    experimental: true,
                 },
             ],
         },

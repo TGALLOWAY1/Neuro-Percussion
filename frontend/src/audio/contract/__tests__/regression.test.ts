@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { migrateToCanonical } from "../migrateToCanonical";
 import { hydratePatchToCanonical } from "../hydrate";
 import { mapCanonicalToEngineParams } from "../mapToEngine";
 import { migratePatchToV1 } from "../../patch/migration";
@@ -18,7 +19,7 @@ import { getCanonicalEnvelopeDefaults } from "../../params";
 
 describe("Regression: Legacy double-application", () => {
   it("mapSnareParams never sets legacy 'wire' macro", () => {
-    const result = mapSnareParams({
+    const { result } = mapSnareParams({
       noise_amount_pct: 55,
       noise_decay_ms: 280,
     });
@@ -29,7 +30,7 @@ describe("Regression: Legacy double-application", () => {
   });
 
   it("mapSnareParams never sets legacy 'crack' macro", () => {
-    const result = mapSnareParams({
+    const { result } = mapSnareParams({
       snap_amount_pct: 35,
       snap_decay_ms: 10,
     });
@@ -42,7 +43,7 @@ describe("Regression: Legacy double-application", () => {
   it("mapKickParams may set legacy macros but nested params take precedence", () => {
     // Kick still sets click_amount/click_snap for backward compat
     // But nested params (kick.click.gain_db) are primary
-    const result = mapKickParams({
+    const { result } = mapKickParams({
       click_amount_pct: 50,
       snap: 0.5,
     });
@@ -57,7 +58,7 @@ describe("Regression: Legacy double-application", () => {
 
   it("mapHatParams never sets legacy macros that would cause double-application", () => {
     // Hat may set "sheen" for backward compat, but not other legacy keys
-    const result = mapHatParams({
+    const { result } = mapHatParams({
       noise_amount_pct: 45,
     });
 
@@ -70,6 +71,19 @@ describe("Regression: Legacy double-application", () => {
 });
 
 describe("Regression: Schema migration produces valid canonical", () => {
+  it("single path: StoredPatch -> migrateToCanonical -> CanonicalPatch -> mapToEngineParams", () => {
+    const v0Patch = {
+      params: { tone: 0.5 },
+      seed: 42,
+    };
+    const canonical = migrateToCanonical(v0Patch, "snare");
+    const expectedDefaults = getCanonicalEnvelopeDefaults("snare");
+    expect(canonical.envelopeParams).toEqual(expectedDefaults);
+    const engine = mapCanonicalToEngineParams(canonical);
+    expect(engine.seed).toBe(42);
+    expect(engine.snare).toBeDefined();
+  });
+
   it("migrated V0 patch has canonical envelope defaults", () => {
     const v0Patch = {
       params: { tone: 0.5 },

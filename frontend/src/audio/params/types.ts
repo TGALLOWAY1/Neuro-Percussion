@@ -34,6 +34,8 @@ export interface ParamSpec {
     default: number;
     /** Optional custom formatter (defaults to unit-based formatting) */
     format?: ParamFormatter;
+    /** If true, param is not required to be mapped to EngineParams; no coverage warning */
+    experimental?: boolean;
 }
 
 /**
@@ -52,12 +54,15 @@ export interface EnvelopeSpec {
 
 /**
  * Complete parameter specification for a drum instrument.
+ * UI renders controls ONLY from this spec (envelopes + macroParams).
  */
 export interface DrumParamSpec {
     /** Instrument type */
     drum: InstrumentType;
     /** Envelope groups (tabs) */
     envelopes: EnvelopeSpec[];
+    /** Macro sliders (AI Suggest / proposer); rendered from spec only */
+    macroParams?: ParamSpec[];
     /** Optional advanced parameters (not shown in main UI) */
     advanced?: ParamSpec[];
 }

@@ -1,9 +1,10 @@
 /**
  * Maps Snare envelope UI parameters to backend engine parameters.
  * Uses unit conversion helpers to ensure correct scaling and prevent double-conversion.
+ * Returns consumed param ids for coverage checks.
  */
 
-import { pctToLinear, pctToDbLinear } from "../units";
+import { pctToDbLinear } from "../units";
 
 export interface SnareEnvelopeParams {
     // AMP envelope
@@ -29,89 +30,116 @@ export interface SnareEnvelopeParams {
     snap_tone_hz?: number;
 }
 
+export interface MapSnareResult {
+    result: Record<string, unknown>;
+    consumed: string[];
+}
+
 /**
  * Maps Snare envelope params to backend format.
+ * Returns result and list of envelope param ids that were consumed.
  */
-export function mapSnareParams(envelopeParams: SnareEnvelopeParams): Record<string, any> {
-    const backendParams: Record<string, any> = {};
+export function mapSnareParams(envelopeParams: SnareEnvelopeParams): MapSnareResult {
+    const backendParams: Record<string, unknown> = {};
+    const consumed: string[] = [];
 
     // AMP envelope -> snare.shell.amp.* (main body)
     if (envelopeParams.attack_ms !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["amp"] = backendParams["snare"]["shell"]["amp"] || {};
-        backendParams["snare"]["shell"]["amp"]["attack_ms"] = envelopeParams.attack_ms;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["shell"]) snare["shell"] = {};
+        const shell = snare["shell"] as Record<string, unknown>;
+        if (!shell["amp"]) shell["amp"] = {};
+        (shell["amp"] as Record<string, unknown>)["attack_ms"] = envelopeParams.attack_ms;
+        consumed.push("attack_ms");
     }
     if (envelopeParams.decay_ms !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["amp"] = backendParams["snare"]["shell"]["amp"] || {};
-        backendParams["snare"]["shell"]["amp"]["decay_ms"] = envelopeParams.decay_ms;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["shell"]) snare["shell"] = {};
+        const shell = snare["shell"] as Record<string, unknown>;
+        if (!shell["amp"]) shell["amp"] = {};
+        (shell["amp"] as Record<string, unknown>)["decay_ms"] = envelopeParams.decay_ms;
+        consumed.push("decay_ms");
     }
 
     // BODY envelope -> snare.shell.*
     if (envelopeParams.body_pitch_hz !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["pitch_hz"] = envelopeParams.body_pitch_hz;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["shell"]) snare["shell"] = {};
+        (snare["shell"] as Record<string, unknown>)["pitch_hz"] = envelopeParams.body_pitch_hz;
+        consumed.push("body_pitch_hz");
     }
     if (envelopeParams.body_decay_ms !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["amp"] = backendParams["snare"]["shell"]["amp"] || {};
-        backendParams["snare"]["shell"]["amp"]["decay_ms"] = envelopeParams.body_decay_ms;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["shell"]) snare["shell"] = {};
+        const shell = snare["shell"] as Record<string, unknown>;
+        if (!shell["amp"]) shell["amp"] = {};
+        (shell["amp"] as Record<string, unknown>)["decay_ms"] = envelopeParams.body_decay_ms;
+        consumed.push("body_decay_ms");
     }
     if (envelopeParams.body_amount_pct !== undefined) {
-        // Convert percentage to gain_db: 0-100% -> -6dB to 0dB (linear mapping)
         const gain_db = pctToDbLinear(envelopeParams.body_amount_pct, -6, 0);
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["gain_db"] = gain_db;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["shell"]) snare["shell"] = {};
+        (snare["shell"] as Record<string, unknown>)["gain_db"] = gain_db;
+        consumed.push("body_amount_pct");
     }
 
     // NOISE envelope -> snare.wires.*
     if (envelopeParams.noise_amount_pct !== undefined) {
-        // Convert percentage to gain_db: 0-100% -> -18dB to +3dB (linear mapping)
         const gain_db = pctToDbLinear(envelopeParams.noise_amount_pct, -18, 3);
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["wires"] = backendParams["snare"]["wires"] || {};
-        backendParams["snare"]["wires"]["gain_db"] = gain_db;
-        // NOTE: Do not set legacy "wire" macro to avoid double-application
-        // Legacy macro is read separately in engine if needed
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["wires"]) snare["wires"] = {};
+        (snare["wires"] as Record<string, unknown>)["gain_db"] = gain_db;
+        consumed.push("noise_amount_pct");
     }
     if (envelopeParams.noise_decay_ms !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["wires"] = backendParams["snare"]["wires"] || {};
-        backendParams["snare"]["wires"]["amp"] = backendParams["snare"]["wires"]["amp"] || {};
-        backendParams["snare"]["wires"]["amp"]["decay_ms"] = envelopeParams.noise_decay_ms;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["wires"]) snare["wires"] = {};
+        const wires = snare["wires"] as Record<string, unknown>;
+        if (!wires["amp"]) wires["amp"] = {};
+        (wires["amp"] as Record<string, unknown>)["decay_ms"] = envelopeParams.noise_decay_ms;
+        consumed.push("noise_decay_ms");
     }
     if (envelopeParams.noise_band_center_hz !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["wires"] = backendParams["snare"]["wires"] || {};
-        backendParams["snare"]["wires"]["filter_hz"] = envelopeParams.noise_band_center_hz;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["wires"]) snare["wires"] = {};
+        (snare["wires"] as Record<string, unknown>)["filter_hz"] = envelopeParams.noise_band_center_hz;
+        consumed.push("noise_band_center_hz");
     }
 
-    // SNAP envelope -> snare.exciter_body.* or snare.exciter_air.*
+    // SNAP envelope -> snare.exciter_body.*
     if (envelopeParams.snap_amount_pct !== undefined) {
-        // Convert percentage to gain_db: 0-100% -> -6dB to 0dB (linear mapping)
         const gain_db = pctToDbLinear(envelopeParams.snap_amount_pct, -6, 0);
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["exciter_body"] = backendParams["snare"]["exciter_body"] || {};
-        backendParams["snare"]["exciter_body"]["gain_db"] = gain_db;
-        // NOTE: Do not set legacy "crack" macro to avoid double-application
-        // Legacy macro is read separately in engine if needed
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["exciter_body"]) snare["exciter_body"] = {};
+        (snare["exciter_body"] as Record<string, unknown>)["gain_db"] = gain_db;
+        consumed.push("snap_amount_pct");
     }
     if (envelopeParams.snap_decay_ms !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["exciter_body"] = backendParams["snare"]["exciter_body"] || {};
-        backendParams["snare"]["exciter_body"]["amp"] = backendParams["snare"]["exciter_body"]["amp"] || {};
-        backendParams["snare"]["exciter_body"]["amp"]["decay_ms"] = envelopeParams.snap_decay_ms;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["exciter_body"]) snare["exciter_body"] = {};
+        const exc = snare["exciter_body"] as Record<string, unknown>;
+        if (!exc["amp"]) exc["amp"] = {};
+        (exc["amp"] as Record<string, unknown>)["decay_ms"] = envelopeParams.snap_decay_ms;
+        consumed.push("snap_decay_ms");
     }
     if (envelopeParams.snap_tone_hz !== undefined) {
-        backendParams["snare"] = backendParams["snare"] || {};
-        backendParams["snare"]["exciter_body"] = backendParams["snare"]["exciter_body"] || {};
-        backendParams["snare"]["exciter_body"]["filter_hz"] = envelopeParams.snap_tone_hz;
+        if (!backendParams["snare"]) backendParams["snare"] = {};
+        const snare = backendParams["snare"] as Record<string, unknown>;
+        if (!snare["exciter_body"]) snare["exciter_body"] = {};
+        (snare["exciter_body"] as Record<string, unknown>)["filter_hz"] = envelopeParams.snap_tone_hz;
+        consumed.push("snap_tone_hz");
     }
 
-    return backendParams;
+    return { result: backendParams, consumed };
 }

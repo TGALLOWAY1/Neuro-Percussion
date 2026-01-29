@@ -11,7 +11,7 @@ describe("Snare Oneshot Mode", () => {
             snap_amount_pct: 35,
         };
 
-        const result = mapSnareParams(envelopeParams);
+        const { result } = mapSnareParams(envelopeParams);
 
         // Should NOT set legacy "wire" or "crack" macros
         expect(result["wire"]).toBeUndefined();
@@ -30,7 +30,7 @@ describe("Snare Oneshot Mode", () => {
             noise_decay_ms: 280,
         };
 
-        const result = mapSnareParams(envelopeParams);
+        const { result } = mapSnareParams(envelopeParams);
 
         expect(result["snare"]["shell"]["amp"]["attack_ms"]).toBe(1);
         expect(result["snare"]["shell"]["amp"]["decay_ms"]).toBe(320);

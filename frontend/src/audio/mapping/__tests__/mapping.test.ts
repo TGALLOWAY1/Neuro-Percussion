@@ -11,7 +11,7 @@ import { pctToDbLinear, pctToLinear } from "../../units";
 describe("Parameter Mapping", () => {
     describe("mapKickParams", () => {
         it("maps AMP envelope params to backend format", () => {
-            const result = mapKickParams({
+            const { result } = mapKickParams({
                 attack_ms: 2,
                 decay_ms: 300,
             });
@@ -21,7 +21,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps PITCH envelope params", () => {
-            const result = mapKickParams({
+            const { result } = mapKickParams({
                 start_pitch_st: 24,
                 pitch_decay_ms: 60,
             });
@@ -31,7 +31,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps CLICK envelope params", () => {
-            const result = mapKickParams({
+            const { result } = mapKickParams({
                 click_amount_pct: 50,
                 click_decay_ms: 12,
             });
@@ -43,17 +43,17 @@ describe("Parameter Mapping", () => {
 
         it("converts click_amount_pct correctly (boundary cases)", () => {
             // 0% -> mute (-200dB)
-            const result0 = mapKickParams({ click_amount_pct: 0 });
+            const { result: result0 } = mapKickParams({ click_amount_pct: 0 });
             expect(result0.kick?.click?.gain_db).toBe(-200);
             expect(result0.click_amount).toBe(0);
 
             // 100% -> 0dB
-            const result100 = mapKickParams({ click_amount_pct: 100 });
+            const { result: result100 } = mapKickParams({ click_amount_pct: 100 });
             expect(result100.kick?.click?.gain_db).toBeCloseTo(0, 2);
             expect(result100.click_amount).toBe(1);
 
             // 50% -> -12dB (midpoint)
-            const result50 = mapKickParams({ click_amount_pct: 50 });
+            const { result: result50 } = mapKickParams({ click_amount_pct: 50 });
             expect(result50.kick?.click?.gain_db).toBeCloseTo(-12, 2);
             expect(result50.click_amount).toBe(0.5);
         });
@@ -61,7 +61,7 @@ describe("Parameter Mapping", () => {
 
     describe("mapSnareParams", () => {
         it("maps AMP envelope params", () => {
-            const result = mapSnareParams({
+            const { result } = mapSnareParams({
                 attack_ms: 1,
                 decay_ms: 320,
             });
@@ -71,7 +71,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps BODY envelope params", () => {
-            const result = mapSnareParams({
+            const { result } = mapSnareParams({
                 body_pitch_hz: 200,
                 body_decay_ms: 180,
             });
@@ -81,7 +81,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps NOISE envelope params", () => {
-            const result = mapSnareParams({
+            const { result } = mapSnareParams({
                 noise_amount_pct: 55,
                 noise_decay_ms: 280,
             });
@@ -94,22 +94,22 @@ describe("Parameter Mapping", () => {
 
         it("converts noise_amount_pct correctly (boundary cases)", () => {
             // 0% -> mute (-200dB)
-            const result0 = mapSnareParams({ noise_amount_pct: 0 });
+            const { result: result0 } = mapSnareParams({ noise_amount_pct: 0 });
             expect(result0.snare?.wires?.gain_db).toBe(-200);
 
             // 100% -> +3dB
-            const result100 = mapSnareParams({ noise_amount_pct: 100 });
+            const { result: result100 } = mapSnareParams({ noise_amount_pct: 100 });
             expect(result100.snare?.wires?.gain_db).toBeCloseTo(3, 2);
 
             // 50% -> midpoint between -18dB and +3dB
-            const result50 = mapSnareParams({ noise_amount_pct: 50 });
+            const { result: result50 } = mapSnareParams({ noise_amount_pct: 50 });
             expect(result50.snare?.wires?.gain_db).toBeCloseTo(-7.5, 2);
         });
     });
 
     describe("mapHatParams", () => {
         it("maps AMP envelope params", () => {
-            const result = mapHatParams({
+            const { result } = mapHatParams({
                 attack_ms: 0.5,
                 decay_ms: 90,
             });
@@ -119,7 +119,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps METAL envelope params", () => {
-            const result = mapHatParams({
+            const { result } = mapHatParams({
                 metal_amount_pct: 65,
                 inharmonicity: 0.55,
             });
@@ -129,7 +129,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps NOISE envelope params", () => {
-            const result = mapHatParams({
+            const { result } = mapHatParams({
                 noise_amount_pct: 45,
                 hpf_cutoff_hz: 6000,
             });
@@ -140,7 +140,7 @@ describe("Parameter Mapping", () => {
         });
 
         it("maps choke flag", () => {
-            const result = mapHatParams({
+            const { result } = mapHatParams({
                 choke: 1,
             });
 
@@ -149,25 +149,25 @@ describe("Parameter Mapping", () => {
 
         it("converts width_pct correctly (boundary cases)", () => {
             // 0% -> 0.0
-            const result0 = mapHatParams({ width_pct: 0 });
+            const { result: result0 } = mapHatParams({ width_pct: 0 });
             expect(result0.hat?.stereo?.width).toBe(0);
 
             // 100% -> 1.0
-            const result100 = mapHatParams({ width_pct: 100 });
+            const { result: result100 } = mapHatParams({ width_pct: 100 });
             expect(result100.hat?.stereo?.width).toBe(1);
 
             // 150% -> 1.5 (max width)
-            const result150 = mapHatParams({ width_pct: 150 });
+            const { result: result150 } = mapHatParams({ width_pct: 150 });
             expect(result150.hat?.stereo?.width).toBe(1.5);
         });
 
         it("converts metal_amount_pct correctly (boundary cases)", () => {
             // 0% -> mute (-200dB)
-            const result0 = mapHatParams({ metal_amount_pct: 0 });
+            const { result: result0 } = mapHatParams({ metal_amount_pct: 0 });
             expect(result0.hat?.metal?.gain_db).toBe(-200);
 
             // 100% -> 0dB
-            const result100 = mapHatParams({ metal_amount_pct: 100 });
+            const { result: result100 } = mapHatParams({ metal_amount_pct: 100 });
             expect(result100.hat?.metal?.gain_db).toBeCloseTo(0, 2);
         });
     });

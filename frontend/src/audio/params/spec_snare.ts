@@ -38,6 +38,7 @@ export const SNARE_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 3.0,
                     step: 0.1,
                     default: 1.4,
+                    experimental: true,
                 },
             ],
         },
@@ -106,6 +107,7 @@ export const SNARE_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 1,
                     step: 0.01,
                     default: 0.6,
+                    experimental: true,
                 },
                 {
                     id: "noise_band_center_hz",
@@ -124,6 +126,7 @@ export const SNARE_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 5,
                     step: 0.1,
                     default: 1.2,
+                    experimental: true,
                 },
             ],
         },

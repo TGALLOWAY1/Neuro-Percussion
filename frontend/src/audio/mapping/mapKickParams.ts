@@ -2,6 +2,7 @@
  * Maps Kick envelope UI parameters to backend engine parameters.
  * Converts new envelope params (AMP, PITCH, CLICK) to nested backend format.
  * Uses unit conversion helpers to ensure correct scaling and prevent double-conversion.
+ * Returns consumed param ids for coverage checks.
  */
 
 import { pctToLinear, pctToDbLinear } from "../units";
@@ -27,83 +28,90 @@ export interface KickEnvelopeParams {
     snap?: number;
 }
 
+export interface MapKickResult {
+    result: Record<string, unknown>;
+    consumed: string[];
+}
+
 /**
  * Maps Kick envelope params to backend format.
- * Returns a flat dict compatible with backend's nested param structure.
+ * Returns result and list of envelope param ids that were consumed (read and written to output).
  */
-export function mapKickParams(envelopeParams: KickEnvelopeParams): Record<string, any> {
-    const backendParams: Record<string, any> = {};
+export function mapKickParams(envelopeParams: KickEnvelopeParams): MapKickResult {
+    const backendParams: Record<string, unknown> = {};
+    const consumed: string[] = [];
+
+    const kick = (backendParams["kick"] as Record<string, unknown>) || {};
+    const sub = (kick["sub"] as Record<string, unknown>) || {};
+    const amp = (sub["amp"] as Record<string, unknown>) || {};
 
     // AMP envelope -> kick.sub.amp.* (main body)
     if (envelopeParams.attack_ms !== undefined) {
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["sub"] = backendParams["kick"]["sub"] || {};
-        backendParams["kick"]["sub"]["amp"] = backendParams["kick"]["sub"]["amp"] || {};
-        backendParams["kick"]["sub"]["amp"]["attack_ms"] = envelopeParams.attack_ms;
+        amp["attack_ms"] = envelopeParams.attack_ms;
+        consumed.push("attack_ms");
     }
     if (envelopeParams.decay_ms !== undefined) {
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["sub"] = backendParams["kick"]["sub"] || {};
-        backendParams["kick"]["sub"]["amp"] = backendParams["kick"]["sub"]["amp"] || {};
-        backendParams["kick"]["sub"]["amp"]["decay_ms"] = envelopeParams.decay_ms;
+        amp["decay_ms"] = envelopeParams.decay_ms;
+        consumed.push("decay_ms");
     }
     if (envelopeParams.hold_ms !== undefined) {
-        // Hold maps to a short sustain or extended attack
-        // For now, approximate by extending attack slightly
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["sub"] = backendParams["kick"]["sub"] || {};
-        backendParams["kick"]["sub"]["amp"] = backendParams["kick"]["sub"]["amp"] || {};
-        // Note: Backend ADSR doesn't have explicit "hold", but we can approximate
-        // by setting a very short sustain period
-        backendParams["kick"]["sub"]["amp"]["sustain"] = 0.0; // No sustain for kick
+        amp["sustain"] = 0.0; // No sustain for kick; hold approximated
+        consumed.push("hold_ms");
+    }
+
+    if (Object.keys(amp).length > 0) {
+        sub["amp"] = amp;
+        kick["sub"] = sub;
+        backendParams["kick"] = kick;
     }
 
     // PITCH envelope -> kick.pitch_env.*
-    if (envelopeParams.start_pitch_st !== undefined || envelopeParams.pitch_decay_ms !== undefined) {
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["pitch_env"] = backendParams["kick"]["pitch_env"] || {};
-        if (envelopeParams.start_pitch_st !== undefined) {
-            backendParams["kick"]["pitch_env"]["semitones"] = envelopeParams.start_pitch_st;
-        }
-        if (envelopeParams.pitch_decay_ms !== undefined) {
-            backendParams["kick"]["pitch_env"]["decay_ms"] = envelopeParams.pitch_decay_ms;
-        }
+    const pitchEnv: Record<string, unknown> = {};
+    if (envelopeParams.start_pitch_st !== undefined) {
+        pitchEnv["semitones"] = envelopeParams.start_pitch_st;
+        consumed.push("start_pitch_st");
+    }
+    if (envelopeParams.pitch_decay_ms !== undefined) {
+        pitchEnv["decay_ms"] = envelopeParams.pitch_decay_ms;
+        consumed.push("pitch_decay_ms");
+    }
+    if (Object.keys(pitchEnv).length > 0) {
+        const k = (backendParams["kick"] as Record<string, unknown>) || {};
+        k["pitch_env"] = pitchEnv;
+        backendParams["kick"] = k;
     }
 
     // CLICK envelope -> kick.click.*
+    const click: Record<string, unknown> = {};
+    const clickAmp: Record<string, unknown> = {};
     if (envelopeParams.click_amount_pct !== undefined) {
-        // Convert percentage to gain_db: 0-100% -> -24dB to 0dB (linear mapping)
-        // If pct <= 0, returns -200 (mute)
         const gain_db = pctToDbLinear(envelopeParams.click_amount_pct, -24, 0);
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["click"] = backendParams["kick"]["click"] || {};
-        backendParams["kick"]["click"]["gain_db"] = gain_db;
-        // Also map to legacy click_amount macro (0-1 linear range)
+        click["gain_db"] = gain_db;
         backendParams["click_amount"] = pctToLinear(envelopeParams.click_amount_pct);
+        consumed.push("click_amount_pct");
     }
     if (envelopeParams.click_attack_ms !== undefined) {
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["click"] = backendParams["kick"]["click"] || {};
-        backendParams["kick"]["click"]["amp"] = backendParams["kick"]["click"]["amp"] || {};
-        backendParams["kick"]["click"]["amp"]["attack_ms"] = envelopeParams.click_attack_ms;
+        clickAmp["attack_ms"] = envelopeParams.click_attack_ms;
+        consumed.push("click_attack_ms");
     }
     if (envelopeParams.click_decay_ms !== undefined) {
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["click"] = backendParams["kick"]["click"] || {};
-        backendParams["kick"]["click"]["amp"] = backendParams["kick"]["click"]["amp"] || {};
-        backendParams["kick"]["click"]["amp"]["decay_ms"] = envelopeParams.click_decay_ms;
+        clickAmp["decay_ms"] = envelopeParams.click_decay_ms;
+        consumed.push("click_decay_ms");
     }
+    if (Object.keys(clickAmp).length > 0) click["amp"] = clickAmp;
     if (envelopeParams.click_tone_hz !== undefined) {
-        // Map to click filter frequency (if backend supports it)
-        // For now, store as a custom param that backend can read
-        backendParams["kick"] = backendParams["kick"] || {};
-        backendParams["kick"]["click"] = backendParams["kick"]["click"] || {};
-        backendParams["kick"]["click"]["filter_hz"] = envelopeParams.click_tone_hz;
+        click["filter_hz"] = envelopeParams.click_tone_hz;
+        consumed.push("click_tone_hz");
     }
     if (envelopeParams.snap !== undefined) {
-        // Map to legacy click_snap macro
         backendParams["click_snap"] = envelopeParams.snap;
+        consumed.push("snap");
+    }
+    if (Object.keys(click).length > 0) {
+        const k = (backendParams["kick"] as Record<string, unknown>) || {};
+        k["click"] = click;
+        backendParams["kick"] = k;
     }
 
-    return backendParams;
+    return { result: backendParams, consumed };
 }

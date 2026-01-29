@@ -47,6 +47,7 @@ export const KICK_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 3.0,
                     step: 0.1,
                     default: 1.6,
+                    experimental: true,
                 },
             ],
         },
@@ -81,6 +82,7 @@ export const KICK_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 3.0,
                     step: 0.1,
                     default: 1.3,
+                    experimental: true,
                 },
                 {
                     id: "end_pitch_offset_st",
@@ -90,6 +92,7 @@ export const KICK_ENVELOPE_SPEC: DrumParamSpec = {
                     max: 12,
                     step: 0.5,
                     default: 0,
+                    experimental: true,
                 },
             ],
         },
@@ -145,5 +148,14 @@ export const KICK_ENVELOPE_SPEC: DrumParamSpec = {
                 },
             ],
         },
+    ],
+    macroParams: [
+        { id: "punch_decay", label: "Punch Decay", unit: "x", min: 0.1, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "click_amount", label: "Click Amount", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "click_snap", label: "Click Snap", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "room_tone_freq", label: "Room Tone (Hz)", unit: "hz", min: 50.0, max: 300.0, step: 1, default: 150.0 },
+        { id: "room_air", label: "Room Air", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.3 },
+        { id: "distance_ms", label: "Distance (ms)", unit: "ms", min: 0.0, max: 50.0, step: 1, default: 20.0 },
+        { id: "blend", label: "Room Mix", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.3 },
     ],
 };
