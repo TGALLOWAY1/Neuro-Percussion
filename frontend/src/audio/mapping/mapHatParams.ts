@@ -1,6 +1,9 @@
 /**
  * Maps Hat envelope UI parameters to backend engine parameters.
+ * Uses unit conversion helpers to ensure correct scaling and prevent double-conversion.
  */
+
+import { pctToLinear, pctToDbLinear, numberToBool } from "../units";
 
 export interface HatEnvelopeParams {
     // AMP envelope
@@ -45,17 +48,18 @@ export function mapHatParams(envelopeParams: HatEnvelopeParams): Record<string, 
         backendParams["hat"]["metal"]["amp"]["decay_ms"] = envelopeParams.decay_ms;
     }
     if (envelopeParams.choke !== undefined) {
-        // Store choke flag (backend can use this for voice management)
+        // Convert number to boolean: threshold at 0.5 (0-1 range -> false/true)
         backendParams["hat"] = backendParams["hat"] || {};
-        backendParams["hat"]["choke_group"] = envelopeParams.choke > 0.5;
+        backendParams["hat"]["choke_group"] = numberToBool(envelopeParams.choke);
     }
 
     // METAL envelope -> hat.metal.*
     if (envelopeParams.metal_amount_pct !== undefined) {
-        const pct = envelopeParams.metal_amount_pct / 100;
+        // Convert percentage to gain_db: 0-100% -> -12dB to 0dB (linear mapping)
+        const gain_db = pctToDbLinear(envelopeParams.metal_amount_pct, -12, 0);
         backendParams["hat"] = backendParams["hat"] || {};
         backendParams["hat"]["metal"] = backendParams["hat"]["metal"] || {};
-        backendParams["hat"]["metal"]["gain_db"] = pct > 0 ? -12 + (pct * 12) : -200;
+        backendParams["hat"]["metal"]["gain_db"] = gain_db;
     }
     if (envelopeParams.inharmonicity !== undefined) {
         backendParams["hat"] = backendParams["hat"] || {};
@@ -70,12 +74,13 @@ export function mapHatParams(envelopeParams: HatEnvelopeParams): Record<string, 
 
     // NOISE envelope -> hat.air.*
     if (envelopeParams.noise_amount_pct !== undefined) {
-        const pct = envelopeParams.noise_amount_pct / 100;
+        // Convert percentage to gain_db: 0-100% -> -12dB to 0dB (linear mapping)
+        const gain_db = pctToDbLinear(envelopeParams.noise_amount_pct, -12, 0);
         backendParams["hat"] = backendParams["hat"] || {};
         backendParams["hat"]["air"] = backendParams["hat"]["air"] || {};
-        backendParams["hat"]["air"]["gain_db"] = pct > 0 ? -12 + (pct * 12) : -200;
-        // Also map to legacy sheen macro
-        backendParams["sheen"] = pct;
+        backendParams["hat"]["air"]["gain_db"] = gain_db;
+        // Also map to legacy sheen macro (0-1 linear range)
+        backendParams["sheen"] = pctToLinear(envelopeParams.noise_amount_pct);
     }
     if (envelopeParams.noise_color !== undefined) {
         backendParams["hat"] = backendParams["hat"] || {};
@@ -89,9 +94,10 @@ export function mapHatParams(envelopeParams: HatEnvelopeParams): Record<string, 
 
     // STEREO envelope -> hat.stereo.* (if backend supports)
     if (envelopeParams.width_pct !== undefined) {
+        // Convert percentage to linear ratio: 0-150% -> 0-1.5 (for stereo width)
         backendParams["hat"] = backendParams["hat"] || {};
         backendParams["hat"]["stereo"] = backendParams["hat"]["stereo"] || {};
-        backendParams["hat"]["stereo"]["width"] = envelopeParams.width_pct / 100;
+        backendParams["hat"]["stereo"]["width"] = pctToLinear(envelopeParams.width_pct);
     }
     if (envelopeParams.micro_delay_ms !== undefined) {
         backendParams["hat"] = backendParams["hat"] || {};

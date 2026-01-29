@@ -1,7 +1,10 @@
 /**
  * Maps Kick envelope UI parameters to backend engine parameters.
  * Converts new envelope params (AMP, PITCH, CLICK) to nested backend format.
+ * Uses unit conversion helpers to ensure correct scaling and prevent double-conversion.
  */
+
+import { pctToLinear, pctToDbLinear } from "../units";
 
 export interface KickEnvelopeParams {
     // AMP envelope
@@ -69,14 +72,14 @@ export function mapKickParams(envelopeParams: KickEnvelopeParams): Record<string
 
     // CLICK envelope -> kick.click.*
     if (envelopeParams.click_amount_pct !== undefined) {
-        // Convert percentage to gain_db (0-100% -> -24dB to 0dB perceptual curve)
-        const pct = envelopeParams.click_amount_pct / 100;
-        const gain_db = pct > 0 ? -24 + (pct * 24) : -200; // Mute if 0
+        // Convert percentage to gain_db: 0-100% -> -24dB to 0dB (linear mapping)
+        // If pct <= 0, returns -200 (mute)
+        const gain_db = pctToDbLinear(envelopeParams.click_amount_pct, -24, 0);
         backendParams["kick"] = backendParams["kick"] || {};
         backendParams["kick"]["click"] = backendParams["kick"]["click"] || {};
         backendParams["kick"]["click"]["gain_db"] = gain_db;
-        // Also map to legacy click_amount macro (0-1 range)
-        backendParams["click_amount"] = pct;
+        // Also map to legacy click_amount macro (0-1 linear range)
+        backendParams["click_amount"] = pctToLinear(envelopeParams.click_amount_pct);
     }
     if (envelopeParams.click_attack_ms !== undefined) {
         backendParams["kick"] = backendParams["kick"] || {};

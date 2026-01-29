@@ -1,6 +1,9 @@
 /**
  * Maps Snare envelope UI parameters to backend engine parameters.
+ * Uses unit conversion helpers to ensure correct scaling and prevent double-conversion.
  */
+
+import { pctToLinear, pctToDbLinear } from "../units";
 
 export interface SnareEnvelopeParams {
     // AMP envelope
@@ -59,18 +62,20 @@ export function mapSnareParams(envelopeParams: SnareEnvelopeParams): Record<stri
         backendParams["snare"]["shell"]["amp"]["decay_ms"] = envelopeParams.body_decay_ms;
     }
     if (envelopeParams.body_amount_pct !== undefined) {
-        const pct = envelopeParams.body_amount_pct / 100;
+        // Convert percentage to gain_db: 0-100% -> -6dB to 0dB (linear mapping)
+        const gain_db = pctToDbLinear(envelopeParams.body_amount_pct, -6, 0);
         backendParams["snare"] = backendParams["snare"] || {};
         backendParams["snare"]["shell"] = backendParams["snare"]["shell"] || {};
-        backendParams["snare"]["shell"]["gain_db"] = pct > 0 ? -6 + (pct * 6) : -200;
+        backendParams["snare"]["shell"]["gain_db"] = gain_db;
     }
 
     // NOISE envelope -> snare.wires.*
     if (envelopeParams.noise_amount_pct !== undefined) {
-        const pct = envelopeParams.noise_amount_pct / 100;
+        // Convert percentage to gain_db: 0-100% -> -18dB to +3dB (linear mapping)
+        const gain_db = pctToDbLinear(envelopeParams.noise_amount_pct, -18, 3);
         backendParams["snare"] = backendParams["snare"] || {};
         backendParams["snare"]["wires"] = backendParams["snare"]["wires"] || {};
-        backendParams["snare"]["wires"]["gain_db"] = pct > 0 ? -18 + (pct * 21) : -200; // -18dB to +3dB
+        backendParams["snare"]["wires"]["gain_db"] = gain_db;
         // NOTE: Do not set legacy "wire" macro to avoid double-application
         // Legacy macro is read separately in engine if needed
     }
@@ -88,10 +93,11 @@ export function mapSnareParams(envelopeParams: SnareEnvelopeParams): Record<stri
 
     // SNAP envelope -> snare.exciter_body.* or snare.exciter_air.*
     if (envelopeParams.snap_amount_pct !== undefined) {
-        const pct = envelopeParams.snap_amount_pct / 100;
+        // Convert percentage to gain_db: 0-100% -> -6dB to 0dB (linear mapping)
+        const gain_db = pctToDbLinear(envelopeParams.snap_amount_pct, -6, 0);
         backendParams["snare"] = backendParams["snare"] || {};
         backendParams["snare"]["exciter_body"] = backendParams["snare"]["exciter_body"] || {};
-        backendParams["snare"]["exciter_body"]["gain_db"] = pct > 0 ? -6 + (pct * 6) : -200;
+        backendParams["snare"]["exciter_body"]["gain_db"] = gain_db;
         // NOTE: Do not set legacy "crack" macro to avoid double-application
         // Legacy macro is read separately in engine if needed
     }

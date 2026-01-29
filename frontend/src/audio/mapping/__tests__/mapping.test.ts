@@ -1,10 +1,12 @@
 /**
  * Lightweight tests for parameter mapping functions.
+ * Verifies unit conversions and boundary cases.
  */
 
 import { mapKickParams } from "../mapKickParams";
 import { mapSnareParams } from "../mapSnareParams";
 import { mapHatParams } from "../mapHatParams";
+import { pctToDbLinear, pctToLinear } from "../../units";
 
 describe("Parameter Mapping", () => {
     describe("mapKickParams", () => {
@@ -37,6 +39,23 @@ describe("Parameter Mapping", () => {
             expect(result.kick?.click?.gain_db).toBeGreaterThan(-24);
             expect(result.kick?.click?.amp?.decay_ms).toBe(12);
             expect(result.click_amount).toBe(0.5);
+        });
+
+        it("converts click_amount_pct correctly (boundary cases)", () => {
+            // 0% -> mute (-200dB)
+            const result0 = mapKickParams({ click_amount_pct: 0 });
+            expect(result0.kick?.click?.gain_db).toBe(-200);
+            expect(result0.click_amount).toBe(0);
+
+            // 100% -> 0dB
+            const result100 = mapKickParams({ click_amount_pct: 100 });
+            expect(result100.kick?.click?.gain_db).toBeCloseTo(0, 2);
+            expect(result100.click_amount).toBe(1);
+
+            // 50% -> -12dB (midpoint)
+            const result50 = mapKickParams({ click_amount_pct: 50 });
+            expect(result50.kick?.click?.gain_db).toBeCloseTo(-12, 2);
+            expect(result50.click_amount).toBe(0.5);
         });
     });
 
@@ -71,6 +90,20 @@ describe("Parameter Mapping", () => {
             expect(result.snare?.wires?.amp?.decay_ms).toBe(280);
             // Legacy "wire" macro is intentionally not set (see mapSnareParams)
             expect(result.wire).toBeUndefined();
+        });
+
+        it("converts noise_amount_pct correctly (boundary cases)", () => {
+            // 0% -> mute (-200dB)
+            const result0 = mapSnareParams({ noise_amount_pct: 0 });
+            expect(result0.snare?.wires?.gain_db).toBe(-200);
+
+            // 100% -> +3dB
+            const result100 = mapSnareParams({ noise_amount_pct: 100 });
+            expect(result100.snare?.wires?.gain_db).toBeCloseTo(3, 2);
+
+            // 50% -> midpoint between -18dB and +3dB
+            const result50 = mapSnareParams({ noise_amount_pct: 50 });
+            expect(result50.snare?.wires?.gain_db).toBeCloseTo(-7.5, 2);
         });
     });
 
@@ -112,6 +145,30 @@ describe("Parameter Mapping", () => {
             });
 
             expect(result.hat?.choke_group).toBe(true);
+        });
+
+        it("converts width_pct correctly (boundary cases)", () => {
+            // 0% -> 0.0
+            const result0 = mapHatParams({ width_pct: 0 });
+            expect(result0.hat?.stereo?.width).toBe(0);
+
+            // 100% -> 1.0
+            const result100 = mapHatParams({ width_pct: 100 });
+            expect(result100.hat?.stereo?.width).toBe(1);
+
+            // 150% -> 1.5 (max width)
+            const result150 = mapHatParams({ width_pct: 150 });
+            expect(result150.hat?.stereo?.width).toBe(1.5);
+        });
+
+        it("converts metal_amount_pct correctly (boundary cases)", () => {
+            // 0% -> mute (-200dB)
+            const result0 = mapHatParams({ metal_amount_pct: 0 });
+            expect(result0.hat?.metal?.gain_db).toBe(-200);
+
+            // 100% -> 0dB
+            const result100 = mapHatParams({ metal_amount_pct: 100 });
+            expect(result100.hat?.metal?.gain_db).toBeCloseTo(0, 2);
         });
     });
 });
