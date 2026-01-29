@@ -1,8 +1,7 @@
 """
-Canonical engine defaults: single source for synthesis initialization.
-Matches frontend spec defaults mapped to engine param shape (mapKickParams, mapSnareParams, mapHatParams).
-Used by resolve_params so backend does not silently override canonical defaults.
-Source: frontend spec_kick / spec_snare / spec_hat defaults.
+Canonical engine defaults: single source for synthesis initialization (RESEARCH_GUIDANCE / ParamSpec).
+Values must match frontend spec_kick / spec_snare / spec_hat defaults.
+Used by: resolve_params, /defaults API. Preset creation, patch reset, and legacy migration use the same source (frontend: getCanonicalPatchDefaults; backend: resolve_params(inst, {})).
 """
 
 from typing import Dict, Any

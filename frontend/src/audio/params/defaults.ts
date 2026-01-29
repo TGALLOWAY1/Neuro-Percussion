@@ -72,3 +72,17 @@ export function getMacroDefaults(instrument: CanonicalInstrument): Record<string
       return { ...HAT_MACRO_DEFAULTS };
   }
 }
+
+/**
+ * Full canonical patch defaults (params + envelopeParams) from ParamSpec.
+ * Single source for preset creation, patch reset, and legacy migration.
+ */
+export function getCanonicalPatchDefaults(instrument: CanonicalInstrument): {
+  params: Record<string, number>;
+  envelopeParams: Record<string, number>;
+} {
+  return {
+    params: getMacroDefaults(instrument),
+    envelopeParams: getCanonicalEnvelopeDefaults(instrument),
+  };
+}

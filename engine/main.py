@@ -28,13 +28,14 @@ async def health_check():
 
 from engine.instruments.kick import KickEngine
 from engine.core.io import AudioIO
-from fastapi import Response, Query
+from fastapi import Response, Query, Body
 from engine.params.resolve import resolve_params
 from engine.params.clamp import clamp_params
+from engine.params.engine_params import to_engine_params
 
 @app.post("/generate/kick")
 async def generate_kick(
-    params: dict,
+    params: dict = Body(default={}, description="Engine params (nested kick.*, seed, etc.)"),
     mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
 ):
     """
@@ -44,8 +45,8 @@ async def generate_kick(
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
-    # Extract seed if present (don't mutate original params)
-    params_copy = params.copy()
+    # Single entry point: only engine params reach instruments (strip legacy)
+    params_copy = to_engine_params(params.copy(), "kick")
     seed = params_copy.pop("seed", 0)
     
     # Apply realistic mode clamps if requested
@@ -76,7 +77,7 @@ from engine.instruments.hat import HatEngine
 
 @app.post("/generate/snare")
 async def generate_snare(
-    params: dict,
+    params: dict = Body(default={}, description="Engine params (nested snare.*, seed, etc.)"),
     mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
 ):
     """
@@ -86,7 +87,8 @@ async def generate_snare(
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
-    params_copy = params.copy()
+    # Single entry point: only engine params reach instruments (strip legacy)
+    params_copy = to_engine_params(params.copy(), "snare")
     seed = params_copy.pop("seed", 0)
     
     # Apply realistic mode clamps if requested
@@ -110,7 +112,7 @@ async def generate_snare(
 
 @app.post("/generate/hat")
 async def generate_hat(
-    params: dict,
+    params: dict = Body(default={}, description="Engine params (nested hat.*, seed, etc.)"),
     mode: str = Query("default", description="Generation mode: 'default' or 'realistic'")
 ):
     """
@@ -120,7 +122,8 @@ async def generate_hat(
     Query params:
     - mode: 'default' (no clamping) or 'realistic' (applies clamps to avoid harsh sounds)
     """
-    params_copy = params.copy()
+    # Single entry point: only engine params reach instruments (strip legacy)
+    params_copy = to_engine_params(params.copy(), "hat")
     seed = params_copy.pop("seed", 0)
     
     # Apply realistic mode clamps if requested
@@ -243,7 +246,9 @@ async def propose(instrument: str):
     return params
 
 from engine.export.exporter import Exporter
-from engine.params.schema import PARAM_SCHEMA, DEFAULT_PRESET
+from engine.params.schema import PARAM_SCHEMA
+from engine.params.resolve import resolve_params
+from engine.params.canonical_defaults import ENGINE_DEFAULTS
 
 @app.get("/schema/{instrument}")
 async def get_schema(instrument: str):
@@ -262,15 +267,15 @@ async def get_schema(instrument: str):
 @app.get("/defaults/{instrument}")
 async def get_defaults(instrument: str):
     """
-    Returns default preset for the specified instrument.
-    Includes macro params, macros (Kick2-style), layer gains, ADSR defaults, and advanced params.
+    Returns default params for the specified instrument.
+    Single source: ENGINE_DEFAULTS (canonical_defaults) + apply_macros, same as resolve_params(inst, {}).
     """
-    if instrument not in DEFAULT_PRESET:
+    if instrument not in ENGINE_DEFAULTS:
         return {"status": "error", "message": f"Invalid instrument: {instrument}"}
-    
+    defaults = resolve_params(instrument, {})
     return {
         "instrument": instrument,
-        "defaults": DEFAULT_PRESET[instrument]
+        "defaults": defaults,
     }
 
 @app.post("/export/kit")
