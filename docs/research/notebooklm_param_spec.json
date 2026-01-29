@@ -1,0 +1,49 @@
+{
+  "source": "docs/RESEARCH_GUIDANCE.md",
+  "instruments": {
+    "kick": {
+      "click_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 50, "notes": "Click Level 0-1 linear" },
+      "click_attack_ms": { "unit": "ms", "min": 0, "max": 5, "default": 0.5, "notes": "Attack (Snap)" },
+      "click_tone_hz": { "unit": "hz", "min": 200, "max": 16000, "default": 6000, "notes": "Click Filter" },
+      "snap": { "unit": "linear", "min": 0, "max": 1, "default": 0.6, "notes": "Hardness" },
+      "start_pitch_st": { "unit": "st", "min": 0, "max": 100, "default": 24, "notes": "Pitch Env Amount" },
+      "pitch_decay_ms": { "unit": "ms", "min": 10, "max": 300, "default": 50, "notes": "Pitch Decay" },
+      "decay_ms": { "unit": "ms", "min": 150, "max": 800, "default": 350, "notes": "Amp Decay" },
+      "attack_ms": { "unit": "ms", "min": 0, "max": 10, "default": 0, "notes": "Global attack" },
+      "hold_ms": { "unit": "ms", "min": 0, "max": 30, "default": 5, "notes": "Hold" },
+      "curve": { "unit": "linear", "min": 0.2, "max": 3, "default": 1.6, "notes": "Envelope curve" },
+      "click_decay_ms": { "unit": "ms", "min": 1, "max": 60, "default": 12, "notes": "Click decay" }
+    },
+    "snare": {
+      "body_pitch_hz": { "unit": "hz", "min": 120, "max": 250, "default": 200, "notes": "Tune" },
+      "body_decay_ms": { "unit": "ms", "min": 50, "max": 400, "default": 150, "notes": "Tone Decay" },
+      "body_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 45, "notes": "Body amount" },
+      "noise_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 60, "notes": "Snare Level" },
+      "noise_decay_ms": { "unit": "ms", "min": 100, "max": 600, "default": 250, "notes": "Noise Decay" },
+      "noise_band_center_hz": { "unit": "hz", "min": 1000, "max": 10000, "default": 5000, "notes": "Wire Filter" },
+      "noise_color": { "unit": "linear", "min": 0, "max": 1, "default": 0.6, "notes": "Noise color" },
+      "noise_band_q": { "unit": "linear", "min": 0.3, "max": 5, "default": 1.2, "notes": "Band Q" },
+      "attack_ms": { "unit": "ms", "min": 0, "max": 10, "default": 1, "notes": "Snap/Attack" },
+      "decay_ms": { "unit": "ms", "min": 40, "max": 2000, "default": 320, "notes": "Amp decay" },
+      "curve": { "unit": "linear", "min": 0.2, "max": 3, "default": 1.4, "notes": "Envelope curve" },
+      "snap_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 35, "notes": "Snap amount" },
+      "snap_decay_ms": { "unit": "ms", "min": 1, "max": 40, "default": 10, "notes": "Snap decay" },
+      "snap_tone_hz": { "unit": "hz", "min": 1500, "max": 12000, "default": 7000, "notes": "Snap tone" }
+    },
+    "hat": {
+      "metal_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 65, "notes": "Metal amount" },
+      "inharmonicity": { "unit": "linear", "min": 0, "max": 1, "default": 0.7, "notes": "Dissonance" },
+      "brightness_hz": { "unit": "hz", "min": 300, "max": 16000, "default": 8000, "notes": "Metal Pitch / Color" },
+      "hpf_cutoff_hz": { "unit": "hz", "min": 300, "max": 12000, "default": 3000, "notes": "HP 300-8kHz" },
+      "decay_ms": { "unit": "ms", "min": 20, "max": 2000, "default": 80, "notes": "Decay" },
+      "attack_ms": { "unit": "ms", "min": 0, "max": 3, "default": 0.5, "notes": "Attack" },
+      "curve": { "unit": "linear", "min": 0.2, "max": 3, "default": 1.2, "notes": "Envelope curve" },
+      "choke": { "unit": "bool", "min": 0, "max": 1, "default": 1, "notes": "Choke group On" },
+      "noise_amount_pct": { "unit": "pct", "min": 0, "max": 100, "default": 45, "notes": "Noise" },
+      "noise_color": { "unit": "linear", "min": 0, "max": 1, "default": 0.75, "notes": "Noise color" },
+      "width_pct": { "unit": "pct", "min": 0, "max": 150, "default": 110, "notes": "Stereo width" },
+      "micro_delay_ms": { "unit": "ms", "min": 0, "max": 20, "default": 6, "notes": "Micro delay" },
+      "air_pct": { "unit": "pct", "min": 0, "max": 40, "default": 10, "notes": "Air" }
+    }
+  }
+}

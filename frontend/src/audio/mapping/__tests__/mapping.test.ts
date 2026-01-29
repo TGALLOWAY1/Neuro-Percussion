@@ -69,7 +69,8 @@ describe("Parameter Mapping", () => {
 
             expect(result.snare?.wires?.gain_db).toBeGreaterThan(-18);
             expect(result.snare?.wires?.amp?.decay_ms).toBe(280);
-            expect(result.wire).toBe(0.55);
+            // Legacy "wire" macro is intentionally not set (see mapSnareParams)
+            expect(result.wire).toBeUndefined();
         });
     });
 
