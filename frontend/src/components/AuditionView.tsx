@@ -7,54 +7,16 @@ import { MacroSlider } from "./MacroSlider";
 import { EnvelopeStrip } from "./envelopes/EnvelopeStrip";
 import { RefreshCw, Play, ThumbsUp, ThumbsDown, Sparkles, Download, Plus, Check } from "lucide-react";
 import { InstrumentType } from "@/types";
-import { getEnvelopeSpec, getCanonicalEnvelopeDefaults } from "@/audio/params";
+import { getEnvelopeSpec, getCanonicalEnvelopeDefaults, getMacroDefaults, getAllSpecParamIds } from "@/audio/params";
 import { hydratePatchToCanonical, mapCanonicalToEngineParams, type CanonicalPatch, type EngineParams } from "@/audio/contract";
 import { validateCanonicalPatch } from "@/audio/patch";
 import clsx from "clsx";
 
 const INSTRUMENTS: InstrumentType[] = ['kick', 'snare', 'hat'];
 
-const CONFIG = {
-    kick: [
-        { id: 'punch_decay', label: 'Punch Decay', min: 0.1, max: 1.0 },
-        { id: 'click_amount', label: 'Click Amount', min: 0.0, max: 1.0 },
-        { id: 'click_snap', label: 'Click Snap', min: 0.0, max: 1.0 },
-        { id: 'room_tone_freq', label: 'Room Tone (Hz)', min: 50.0, max: 300.0 },
-        { id: 'room_air', label: 'Room Air', min: 0.0, max: 1.0 },
-        { id: 'distance_ms', label: 'Distance (ms)', min: 0.0, max: 50.0 },
-        { id: 'blend', label: 'Room Mix', min: 0.0, max: 1.0 },
-    ],
-    snare: [
-        { id: 'tone', label: 'Tone (Shell)', min: 0.0, max: 1.0 },
-        { id: 'wire', label: 'Wire (Rattle)', min: 0.0, max: 1.0 },
-        { id: 'crack', label: 'Crack (Snap)', min: 0.0, max: 1.0 },
-        { id: 'body', label: 'Body (Depth)', min: 0.0, max: 1.0 },
-    ],
-    hat: [
-        { id: 'tightness', label: 'Tightness', min: 0.0, max: 1.0 },
-        { id: 'sheen', label: 'Sheen (Air)', min: 0.0, max: 1.0 },
-        { id: 'dirt', label: 'Dirt (Sat)', min: 0.0, max: 1.0 },
-        { id: 'color', label: 'Color (FM)', min: 0.0, max: 1.0 },
-    ],
-};
-
-const DEFAULT_PARAMS = {
-    kick: {
-        punch_decay: 0.5,
-        click_amount: 0.5,
-        click_snap: 0.5,
-        room_tone_freq: 150.0,
-        room_air: 0.3,
-        distance_ms: 20.0,
-        blend: 0.3
-    },
-    snare: { tone: 0.5, wire: 0.4, crack: 0.5, body: 0.5 },
-    hat: { tightness: 0.5, sheen: 0.4, dirt: 0.2, color: 0.5 },
-};
-
 export default function AuditionView() {
     const [instrument, setInstrument] = useState<InstrumentType>('kick');
-    const [params, setParams] = useState<Record<string, number>>(DEFAULT_PARAMS['kick']);
+    const [params, setParams] = useState<Record<string, number>>(() => getMacroDefaults('kick'));
     const [envelopeParams, setEnvelopeParams] = useState<Record<string, number>>({});
     const [seed, setSeed] = useState(42);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -70,16 +32,24 @@ export default function AuditionView() {
     // Prevent double-triggering: track last trigger time
     const lastTriggerTimeRef = useRef<number>(0);
     const TRIGGER_DEBOUNCE_MS = 50; // Minimum time between triggers
+    // Refs so debounced generate always uses latest params (avoids stale closure)
+    const paramsRef = useRef<Record<string, number>>(params);
+    const envelopeParamsRef = useRef<Record<string, number>>(envelopeParams);
+    paramsRef.current = params;
+    envelopeParamsRef.current = envelopeParams;
 
     const switchInstrument = (inst: InstrumentType) => {
         setInstrument(inst);
-        setParams(DEFAULT_PARAMS[inst]);
+        const macroDefaults = getMacroDefaults(inst);
+        setParams(macroDefaults);
         const defaults = getCanonicalEnvelopeDefaults(inst);
         setEnvelopeParams(defaults);
+        paramsRef.current = macroDefaults;
+        envelopeParamsRef.current = defaults;
         setFeedbackSent(null);
         // Auto-regen with defaults (single mapping path)
         requestAnimationFrame(() => {
-            const engineParams = getEngineParamsForInstrument(inst, DEFAULT_PARAMS[inst], defaults, seed, kit[inst]);
+            const engineParams = getEngineParamsForInstrument(inst, macroDefaults, defaults, seed, kit[inst]);
             handleGenerate(inst, undefined, undefined, engineParams);
         });
     };
@@ -120,12 +90,13 @@ export default function AuditionView() {
 
         const instIdx = instOverride ?? instrument;
         const currentSeed = seedOverride ?? seed;
-        const macroP = paramsOverride ?? params;
+        const macroP = paramsOverride ?? paramsRef.current;
+        const envP = envelopeParamsRef.current;
 
         const engineParams: EngineParams = engineParamsOverride ?? getEngineParamsForInstrument(
             instIdx,
             macroP,
-            envelopeParams,
+            envP,
             currentSeed,
             kit[instIdx]
         );
@@ -148,11 +119,14 @@ export default function AuditionView() {
 
 
     useEffect(() => {
+        const macroDefaults = getMacroDefaults(instrument);
         const defaults = getCanonicalEnvelopeDefaults(instrument);
+        paramsRef.current = macroDefaults;
+        envelopeParamsRef.current = defaults;
         setEnvelopeParams(defaults);
         const engineParams = getEngineParamsForInstrument(
             instrument,
-            DEFAULT_PARAMS[instrument],
+            macroDefaults,
             defaults,
             seed,
             undefined
@@ -169,6 +143,31 @@ export default function AuditionView() {
             }
         };
     }, []);
+
+    // Control audit (dev only): controls rendered vs params in patch; flag params not in spec
+    useEffect(() => {
+        if (process.env.NODE_ENV !== "development") return;
+        const { envelope: specEnvelopeIds, macro: specMacroIds } = getAllSpecParamIds(instrument);
+        const allSpecIds = new Set([...specEnvelopeIds, ...specMacroIds]);
+        const patchMacroKeys = Object.keys(params);
+        const patchEnvelopeKeys = Object.keys(envelopeParams);
+        const notInSpecMacro = patchMacroKeys.filter((k) => !specMacroIds.includes(k));
+        const notInSpecEnvelope = patchEnvelopeKeys.filter((k) => !specEnvelopeIds.includes(k));
+        console.group("[Control Audit]");
+        console.log("Controls rendered (from spec):", {
+            macro: specMacroIds,
+            envelope: specEnvelopeIds,
+        });
+        if (notInSpecMacro.length > 0 || notInSpecEnvelope.length > 0) {
+            console.warn("Params in patch but not in spec (should be none):", {
+                macro: notInSpecMacro.length ? notInSpecMacro : undefined,
+                envelope: notInSpecEnvelope.length ? notInSpecEnvelope : undefined,
+            });
+        } else {
+            console.log("Params in patch match spec ids.");
+        }
+        console.groupEnd();
+    }, [instrument, params, envelopeParams]);
 
     const nextSeed = () => {
         const newSeed = Math.floor(Math.random() * 100000);
@@ -236,26 +235,40 @@ export default function AuditionView() {
     };
 
     const updateParam = (key: string, val: number) => {
+        const updated = { ...paramsRef.current, [key]: val };
+        paramsRef.current = updated;
         setParams(prev => ({ ...prev, [key]: val }));
-        // Trigger real-time preview with debounce
         if (previewTimeoutRef.current) {
             clearTimeout(previewTimeoutRef.current);
         }
         previewTimeoutRef.current = setTimeout(() => {
-            const updated = { ...params, [key]: val };
-            handleGenerate(undefined, updated, undefined);
+            const engineParams = getEngineParamsForInstrument(
+                instrument,
+                paramsRef.current,
+                envelopeParamsRef.current,
+                seed,
+                kit[instrument]
+            );
+            handleGenerate(undefined, undefined, undefined, engineParams);
         }, 300);
     };
 
     const updateEnvelopeParam = (paramId: string, value: number) => {
+        const updated = { ...envelopeParamsRef.current, [paramId]: value };
+        envelopeParamsRef.current = updated;
         setEnvelopeParams(prev => ({ ...prev, [paramId]: value }));
-        // Trigger real-time preview with debounce
         if (previewTimeoutRef.current) {
             clearTimeout(previewTimeoutRef.current);
         }
         previewTimeoutRef.current = setTimeout(() => {
-            const updated = { ...envelopeParams, [paramId]: value };
-            handleGenerate(undefined, undefined, undefined);
+            const engineParams = getEngineParamsForInstrument(
+                instrument,
+                paramsRef.current,
+                envelopeParamsRef.current,
+                seed,
+                kit[instrument]
+            );
+            handleGenerate(undefined, undefined, undefined, engineParams);
         }, 300);
     };
 
@@ -268,8 +281,17 @@ export default function AuditionView() {
             envelope.params.forEach(param => {
                 updates[param.id] = defaults[param.id] ?? param.default;
             });
+            const next = { ...envelopeParamsRef.current, ...updates };
+            envelopeParamsRef.current = next;
             setEnvelopeParams(prev => ({ ...prev, ...updates }));
-            setTimeout(() => handleGenerate(undefined, undefined, undefined), 0);
+            const engineParams = getEngineParamsForInstrument(
+                instrument,
+                paramsRef.current,
+                next,
+                seed,
+                kit[instrument]
+            );
+            setTimeout(() => handleGenerate(undefined, undefined, undefined, engineParams), 0);
         }
     };
 
@@ -397,15 +419,15 @@ export default function AuditionView() {
                     </div>
                 </div>
 
-                {/* Controls */}
+                {/* Macro controls from ParamSpec only (envelope strip above is primary for sound design) */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-6 z-10">
-                    {CONFIG[instrument].map(p => (
+                    {(getEnvelopeSpec(instrument).macroParams ?? []).map(p => (
                         <MacroSlider
                             key={p.id}
                             label={p.label}
-                            value={params[p.id] || 0}
-                            min={p.min ?? 0}
-                            max={p.max ?? 1}
+                            value={params[p.id] ?? p.default}
+                            min={p.min}
+                            max={p.max}
                             onChange={(v) => updateParam(p.id, v)}
                         />
                     ))}

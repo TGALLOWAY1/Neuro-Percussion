@@ -153,4 +153,10 @@ export const HAT_ENVELOPE_SPEC: DrumParamSpec = {
             ],
         },
     ],
+    macroParams: [
+        { id: "tightness", label: "Tightness", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "sheen", label: "Sheen (Air)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.4 },
+        { id: "dirt", label: "Dirt (Sat)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.2 },
+        { id: "color", label: "Color (FM)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+    ],
 };

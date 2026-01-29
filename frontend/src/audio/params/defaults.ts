@@ -46,3 +46,29 @@ export const CANONICAL_ENVELOPE_DEFAULTS: Record<CanonicalInstrument, Record<str
   snare: SNARE_DEFAULTS,
   hat: HAT_DEFAULTS,
 };
+
+function macroDefaultsFromSpec(spec: { macroParams?: { id: string; default: number }[] }): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of spec.macroParams ?? []) {
+    out[p.id] = p.default;
+  }
+  return out;
+}
+
+const KICK_MACRO_DEFAULTS = macroDefaultsFromSpec(KICK_ENVELOPE_SPEC);
+const SNARE_MACRO_DEFAULTS = macroDefaultsFromSpec(SNARE_ENVELOPE_SPEC);
+const HAT_MACRO_DEFAULTS = macroDefaultsFromSpec(HAT_ENVELOPE_SPEC);
+
+/**
+ * Macro (slider) defaults per instrument. Single source from ParamSpec; used by AuditionView.
+ */
+export function getMacroDefaults(instrument: CanonicalInstrument): Record<string, number> {
+  switch (instrument) {
+    case "kick":
+      return { ...KICK_MACRO_DEFAULTS };
+    case "snare":
+      return { ...SNARE_MACRO_DEFAULTS };
+    case "hat":
+      return { ...HAT_MACRO_DEFAULTS };
+  }
+}

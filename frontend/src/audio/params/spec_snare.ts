@@ -162,4 +162,10 @@ export const SNARE_ENVELOPE_SPEC: DrumParamSpec = {
             ],
         },
     ],
+    macroParams: [
+        { id: "tone", label: "Tone (Shell)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "wire", label: "Wire (Rattle)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.4 },
+        { id: "crack", label: "Crack (Snap)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+        { id: "body", label: "Body (Depth)", unit: "x", min: 0.0, max: 1.0, step: 0.01, default: 0.5 },
+    ],
 };
