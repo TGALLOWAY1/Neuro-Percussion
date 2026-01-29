@@ -49,3 +49,24 @@ export function getAllSpecParamIds(instrument: "kick" | "snare" | "hat"): { enve
     const macro = (spec.macroParams ?? []).map((p) => p.id);
     return { envelope, macro };
 }
+
+/**
+ * Random envelope params within spec min/max per param.
+ * Used by "Generate New" and "AI Suggest" so each generation varies AMP/PITCH/CLICK (and snare/hat envelopes).
+ */
+export function getRandomEnvelopeParams(instrument: "kick" | "snare" | "hat"): Record<string, number> {
+    const spec = getEnvelopeSpec(instrument);
+    const out: Record<string, number> = {};
+    for (const env of spec.envelopes) {
+        for (const p of env.params) {
+            const { min, max, step } = p;
+            let value = min + Math.random() * (max - min);
+            if (step != null && step > 0) {
+                value = Math.round(value / step) * step;
+                value = Math.max(min, Math.min(max, value));
+            }
+            out[p.id] = value;
+        }
+    }
+    return out;
+}

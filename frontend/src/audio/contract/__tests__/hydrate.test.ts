@@ -97,4 +97,20 @@ describe("hydratePatchToCanonical", () => {
       expect(canonical.params).not.toHaveProperty(key);
     }
   });
+
+  it("strips unknown macro keys (only allowed keys kept)", () => {
+    const patchLike: PatchLike = {
+      params: {
+        punch_decay: 0.5,
+        unknown_foo: 999,
+        click_amount: 0.3,
+      },
+      seed: 42,
+    };
+    const canonical = hydratePatchToCanonical(patchLike, "kick");
+
+    expect(canonical.params.punch_decay).toBe(0.5);
+    expect(canonical.params.click_amount).toBe(0.3);
+    expect(canonical.params).not.toHaveProperty("unknown_foo");
+  });
 });

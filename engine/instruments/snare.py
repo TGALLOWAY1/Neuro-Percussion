@@ -219,12 +219,12 @@ def _snare_amp_env(
         sustain = get_param(params, f"{prefix}.sustain", 0.0)
         release_ms = get_param(params, f"{prefix}.release_ms", 0.0)
     elif layer == "shell":
-        decay_ms = get_param(params, f"{prefix}.decay_ms", 500.0)  # default flat within 0.5s (recreate current)
+        decay_ms = get_param(params, f"{prefix}.decay_ms", 500.0)  # body decay; envelope decays to 0 so noise can follow
         attack_ms = get_param(params, f"{prefix}.attack_ms", 0.0)
-        sustain = get_param(params, f"{prefix}.sustain", 1.0)
+        sustain = get_param(params, f"{prefix}.sustain", 0.0)  # decay to 0 so body + wires share same envelope
         release_ms = get_param(params, f"{prefix}.release_ms", 0.0)
     elif layer == "wires":
-        decay_ms = get_param(params, f"{prefix}.decay_ms", 500.0)  # default flat; wire_env baked in
+        decay_ms = get_param(params, f"{prefix}.decay_ms", 500.0)  # unused when following shell; kept for level/fade
         attack_ms = get_param(params, f"{prefix}.attack_ms", 0.0)
         sustain = get_param(params, f"{prefix}.sustain", 1.0)
         release_ms = get_param(params, f"{prefix}.release_ms", 0.0)
@@ -482,7 +482,8 @@ class SnareEngine:
             exciter_air = snap_de * (exciter_air / (snap_bus + 1e-12))
         
         shell_layer = (shell_out * _trim_env(envs["shell"], num_samples)).float()
-        wires_layer = (wires_out * _trim_env(envs["wires"], num_samples)).float()
+        # Noise (wires) follows body envelope so they decay together; wires_out still has wire_env for tone
+        wires_layer = (wires_out * _trim_env(envs["shell"], num_samples)).float()
         room_layer = (room_out * _trim_env(envs["room"], num_samples)).float()
 
         # ---------- LayerMixer ----------

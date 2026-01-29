@@ -7,7 +7,7 @@ import { MacroSlider } from "./MacroSlider";
 import { EnvelopeStrip } from "./envelopes/EnvelopeStrip";
 import { RefreshCw, Play, ThumbsUp, ThumbsDown, Sparkles, Download, Plus, Check } from "lucide-react";
 import { InstrumentType } from "@/types";
-import { getEnvelopeSpec, getCanonicalEnvelopeDefaults, getMacroDefaults, getAllSpecParamIds } from "@/audio/params";
+import { getEnvelopeSpec, getCanonicalEnvelopeDefaults, getMacroDefaults, getAllSpecParamIds, getRandomEnvelopeParams } from "@/audio/params";
 import { hydratePatchToCanonical, mapCanonicalToEngineParams, type CanonicalPatch, type EngineParams } from "@/audio/contract";
 import { validateCanonicalPatch } from "@/audio/patch";
 import clsx from "clsx";
@@ -78,7 +78,8 @@ export default function AuditionView() {
         instOverride?: InstrumentType,
         paramsOverride?: Record<string, number>,
         seedOverride?: number,
-        engineParamsOverride?: EngineParams
+        engineParamsOverride?: EngineParams,
+        envelopeParamsOverride?: Record<string, number>
     ) => {
         const now = Date.now();
         const timeSinceLastTrigger = now - lastTriggerTimeRef.current;
@@ -91,7 +92,7 @@ export default function AuditionView() {
         const instIdx = instOverride ?? instrument;
         const currentSeed = seedOverride ?? seed;
         const macroP = paramsOverride ?? paramsRef.current;
-        const envP = envelopeParamsRef.current;
+        const envP = envelopeParamsOverride ?? envelopeParamsRef.current;
 
         const engineParams: EngineParams = engineParamsOverride ?? getEngineParamsForInstrument(
             instIdx,
@@ -110,6 +111,10 @@ export default function AuditionView() {
             setAudioUrl(url);
             if (paramsOverride) setParams(paramsOverride);
             if (seedOverride !== undefined) setSeed(seedOverride);
+            if (envelopeParamsOverride) {
+                setEnvelopeParams(envelopeParamsOverride);
+                envelopeParamsRef.current = envelopeParamsOverride;
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -171,8 +176,8 @@ export default function AuditionView() {
 
     const nextSeed = () => {
         const newSeed = Math.floor(Math.random() * 100000);
-        // Directly call generate with new seed
-        handleGenerate(undefined, undefined, newSeed);
+        const newEnvelopeParams = getRandomEnvelopeParams(instrument);
+        handleGenerate(undefined, undefined, newSeed, undefined, newEnvelopeParams);
     };
 
     const handleFeedback = async (label: number) => {
@@ -188,9 +193,11 @@ export default function AuditionView() {
         setIsLoading(true);
         try {
             const newParams = await proposeParams(instrument);
-            handleGenerate(undefined, newParams);
+            const newEnvelopeParams = getRandomEnvelopeParams(instrument);
+            await handleGenerate(undefined, newParams, undefined, undefined, newEnvelopeParams);
         } catch (err) {
             console.error(err);
+        } finally {
             setIsLoading(false);
         }
     };
