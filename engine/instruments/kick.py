@@ -14,6 +14,15 @@ from engine.core.params import get_param, get_db_gain
 
 logger = logging.getLogger(__name__)
 
+# Default carrier frequency (Hz) for kick fundamental
+DEFAULT_KICK_TUNE_HZ = 55.0
+# Sub/click crossover frequency (Hz)
+CROSSOVER_HZ = 120.0
+# Click noise burst max duration (seconds)
+CLICK_BURST_DURATION_S = 0.025
+# Knock frequency range (Hz): min + (max - min) * freq_norm
+KNOCK_FREQ_MIN_HZ = 110.0
+KNOCK_FREQ_MAX_HZ = 240.0
 
 from engine.params.spec_resolver import resolve_kick_spec_params  # noqa: F401 — re-exported for backward compat
 
@@ -123,7 +132,7 @@ class KickEngine:
         punch_decay = params.get("punch_decay", 0.3)
         click_amount = params.get("click_amount", 0.5)
         click_snap = params.get("click_snap", 0.01)
-        tune = params.get("tune", 55.0)  # Updated default to 55Hz (realistic)
+        tune = params.get("tune", DEFAULT_KICK_TUNE_HZ)
         room_tone_freq = params.get("room_tone_freq", 150.0)
         room_air = params.get("room_air", 0.3)
         distance_ms = params.get("distance_ms", 10.0)
@@ -158,9 +167,8 @@ class KickEngine:
         )
 
         # Split into sub (low) and click (high) for per-layer control
-        crossover_hz = 120.0
-        sub_audio = Filter.lowpass(signal_a, self.sample_rate, crossover_hz, q=0.707)
-        click_audio_fm = Filter.highpass(signal_a, self.sample_rate, crossover_hz, q=0.707)
+        sub_audio = Filter.lowpass(signal_a, self.sample_rate, CROSSOVER_HZ, q=0.707)
+        click_audio_fm = Filter.highpass(signal_a, self.sample_rate, CROSSOVER_HZ, q=0.707)
         
         # ---------- Click layer: filtered noise burst (spec mode) or FM-derived (legacy) ----------
         click_filter_hz = get_param(params, "kick.click.filter_hz", None)
@@ -168,8 +176,7 @@ class KickEngine:
         
         if click_filter_hz is not None:
             # Spec mode: generate click as filtered noise burst (0-25ms)
-            click_duration_s = 0.025  # 25ms max
-            click_samples = int(click_duration_s * self.sample_rate)
+            click_samples = int(CLICK_BURST_DURATION_S * self.sample_rate)
             click_noise = torch.randn(click_samples, dtype=torch.float32)
             # Apply HPF at click_filter_hz
             click_audio = Filter.highpass(click_noise, self.sample_rate, click_filter_hz, q=0.707)
@@ -203,7 +210,7 @@ class KickEngine:
         except (TypeError, ValueError):
             freq_norm = 0.5
         freq_norm = max(0.0, min(1.0, freq_norm))
-        knock_freq = 110.0 + (240.0 - 110.0) * freq_norm
+        knock_freq = KNOCK_FREQ_MIN_HZ + (KNOCK_FREQ_MAX_HZ - KNOCK_FREQ_MIN_HZ) * freq_norm
         decay_ms = get_param(params, "kick.knock.decay_ms", 50.0)
         try:
             decay_ms = float(decay_ms)

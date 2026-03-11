@@ -44,11 +44,11 @@ export function useKeyboardShortcuts() {
         case "Enter":
         case "KeyN":
           e.preventDefault();
-          store.rollDice();
+          store.randomizeAll();
           break;
         case "KeyR":
           e.preventDefault();
-          store.smartMutate();
+          store.mutateParams();
           break;
         case "ArrowRight": {
           e.preventDefault();

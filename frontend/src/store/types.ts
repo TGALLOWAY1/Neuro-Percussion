@@ -55,8 +55,8 @@ export interface AudioActions {
 }
 
 export interface MutationState {
-  feedbackSent: number | null;
-  mutationFocus: MutationFocus;
+  lastFeedbackLabel: number | null;
+  mutationTarget: MutationFocus;
   mutationAmount: number;
   feedbackHistory: Array<{ instrument: InstrumentType; seed: number; label: number }>;
 }
@@ -64,15 +64,15 @@ export interface MutationState {
 export interface MutationActions {
   submitFeedback: (label: number) => Promise<void>;
   aiSuggest: () => Promise<void>;
-  rollDice: () => void;
-  smartMutate: () => void;
-  setMutationFocus: (focus: MutationFocus) => void;
+  randomizeAll: () => void;
+  mutateParams: () => void;
+  setMutationTarget: (focus: MutationFocus) => void;
   setMutationAmount: (amount: number) => void;
 }
 
 export interface EnvelopeState {
   bezierEnvelopes: Record<string, BezierEnvelope>;
-  timingMs: number;
+  masterDurationMs: number;
   activeLayer: LayerTab;
   envelopeMode: EnvelopeViewMode;
 }
@@ -80,7 +80,7 @@ export interface EnvelopeState {
 export interface EnvelopeActions {
   updateBezierEnvelope: (envelopeId: string, envelope: BezierEnvelope) => void;
   syncBezierFromParams: () => void;
-  setTimingMs: (ms: number) => void;
+  setMasterDurationMs: (ms: number) => void;
   setActiveLayer: (layer: LayerTab) => void;
   setEnvelopeMode: (mode: EnvelopeViewMode) => void;
 }

@@ -16,8 +16,8 @@ export const createMutationSlice: StateCreator<
   MutationState & MutationActions
 > = (set, get) => ({
   // Initial state
-  feedbackSent: null,
-  mutationFocus: "all",
+  lastFeedbackLabel: null,
+  mutationTarget: "all",
   mutationAmount: 0.3,
   feedbackHistory: [],
 
@@ -27,7 +27,7 @@ export const createMutationSlice: StateCreator<
     try {
       await sendFeedback(instrument, params, seed, label);
       set((s) => {
-        s.feedbackSent = label;
+        s.lastFeedbackLabel = label;
         s.feedbackHistory.push({ instrument, seed, label });
         if (s.feedbackHistory.length > 50) {
           s.feedbackHistory = s.feedbackHistory.slice(-50);
@@ -61,7 +61,7 @@ export const createMutationSlice: StateCreator<
   },
 
   // --- Regenerator ---
-  rollDice: () => {
+  randomizeAll: () => {
     const { instrument } = get();
     const newSeed = Math.floor(Math.random() * 100000);
     const newEnvelopeParams = getRandomEnvelopeParams(instrument);
@@ -76,15 +76,15 @@ export const createMutationSlice: StateCreator<
 
     set((s) => {
       s.params = newMacros;
-      s.feedbackSent = null;
+      s.lastFeedbackLabel = null;
     });
 
     get().generate({ seed: newSeed, params: newMacros, envelopeParams: newEnvelopeParams });
     setTimeout(() => get().syncBezierFromParams(), 50);
   },
 
-  smartMutate: () => {
-    const { instrument, params, envelopeParams, mutationFocus, mutationAmount } = get();
+  mutateParams: () => {
+    const { instrument, params, envelopeParams, mutationTarget, mutationAmount } = get();
     const spec = getEnvelopeSpec(instrument);
     const newSeed = Math.floor(Math.random() * 100000);
 
@@ -93,10 +93,10 @@ export const createMutationSlice: StateCreator<
     const envSpecs = spec.envelopes;
 
     for (const envSpec of envSpecs) {
-      if (mutationFocus !== "all" && mutationFocus !== "macros" && envSpec.id !== mutationFocus) {
+      if (mutationTarget !== "all" && mutationTarget !== "macros" && envSpec.id !== mutationTarget) {
         continue;
       }
-      if (mutationFocus === "macros") continue;
+      if (mutationTarget === "macros") continue;
 
       for (const p of envSpec.params) {
         const current = newEnvParams[p.id] ?? p.default;
@@ -110,7 +110,7 @@ export const createMutationSlice: StateCreator<
 
     // Mutate macro params if focus is "all" or "macros"
     const newMacros = { ...params };
-    if (mutationFocus === "all" || mutationFocus === "macros") {
+    if (mutationTarget === "all" || mutationTarget === "macros") {
       for (const p of spec.macroParams ?? []) {
         const current = newMacros[p.id] ?? p.default;
         const range = p.max - p.min;
@@ -124,16 +124,16 @@ export const createMutationSlice: StateCreator<
     set((s) => {
       s.envelopeParams = newEnvParams;
       s.params = newMacros;
-      s.feedbackSent = null;
+      s.lastFeedbackLabel = null;
     });
 
     get().generate({ seed: newSeed, params: newMacros, envelopeParams: newEnvParams });
     setTimeout(() => get().syncBezierFromParams(), 50);
   },
 
-  setMutationFocus: (focus) => {
+  setMutationTarget: (focus) => {
     set((s) => {
-      s.mutationFocus = focus;
+      s.mutationTarget = focus;
     });
   },
 

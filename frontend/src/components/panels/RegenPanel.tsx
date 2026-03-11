@@ -35,11 +35,11 @@ export const RegenPanel: React.FC = () => {
   const instrument = usePercussionStore((s) => s.instrument);
   const params = usePercussionStore((s) => s.params);
   const seed = usePercussionStore((s) => s.seed);
-  const feedbackSent = usePercussionStore((s) => s.feedbackSent);
+  const lastFeedbackLabel = usePercussionStore((s) => s.lastFeedbackLabel);
   const kit = usePercussionStore((s) => s.kit);
   const isExporting = usePercussionStore((s) => s.isExporting);
   const isLoading = usePercussionStore((s) => s.isLoading);
-  const mutationFocus = usePercussionStore((s) => s.mutationFocus);
+  const mutationTarget = usePercussionStore((s) => s.mutationTarget);
   const mutationAmount = usePercussionStore((s) => s.mutationAmount);
   const audioUrl = usePercussionStore((s) => s.audioUrl);
 
@@ -49,9 +49,9 @@ export const RegenPanel: React.FC = () => {
   const aiSuggest = usePercussionStore((s) => s.aiSuggest);
   const addToKit = usePercussionStore((s) => s.addToKit);
   const exportCurrentKit = usePercussionStore((s) => s.exportCurrentKit);
-  const rollDice = usePercussionStore((s) => s.rollDice);
-  const smartMutate = usePercussionStore((s) => s.smartMutate);
-  const setMutationFocus = usePercussionStore((s) => s.setMutationFocus);
+  const randomizeAll = usePercussionStore((s) => s.randomizeAll);
+  const mutateParams = usePercussionStore((s) => s.mutateParams);
+  const setMutationTarget = usePercussionStore((s) => s.setMutationTarget);
   const setMutationAmount = usePercussionStore((s) => s.setMutationAmount);
   const saveWav = usePercussionStore((s) => s.saveWav);
 
@@ -68,14 +68,14 @@ export const RegenPanel: React.FC = () => {
         <GenerationControls
           seed={seed}
           isLoading={isLoading}
-          mutationFocus={mutationFocus}
+          mutationTarget={mutationTarget}
           mutationAmount={mutationAmount}
           focusOptions={focusOptions}
-          onRollDice={rollDice}
-          onSmartMutate={smartMutate}
+          onRandomizeAll={randomizeAll}
+          onMutateParams={mutateParams}
           onReplay={() => generate()}
           onAiSuggest={aiSuggest}
-          onSetMutationFocus={setMutationFocus}
+          onSetMutationTarget={setMutationTarget}
           onSetMutationAmount={setMutationAmount}
         />
 
@@ -83,7 +83,7 @@ export const RegenPanel: React.FC = () => {
         <div className="flex-1" />
 
         <FeedbackControls
-          feedbackSent={feedbackSent}
+          lastFeedbackLabel={lastFeedbackLabel}
           onSubmitFeedback={submitFeedback}
         />
 

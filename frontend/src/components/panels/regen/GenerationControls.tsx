@@ -7,37 +7,37 @@ import { Dice5, Wand2, Play, Sparkles } from "lucide-react";
 interface Props {
   seed: number;
   isLoading: boolean;
-  mutationFocus: MutationFocus;
+  mutationTarget: MutationFocus;
   mutationAmount: number;
   focusOptions: { value: MutationFocus; label: string }[];
-  onRollDice: () => void;
-  onSmartMutate: () => void;
+  onRandomizeAll: () => void;
+  onMutateParams: () => void;
   onReplay: () => void;
   onAiSuggest: () => void;
-  onSetMutationFocus: (focus: MutationFocus) => void;
+  onSetMutationTarget: (focus: MutationFocus) => void;
   onSetMutationAmount: (amount: number) => void;
 }
 
 export const GenerationControls: React.FC<Props> = ({
   seed,
   isLoading,
-  mutationFocus,
+  mutationTarget,
   mutationAmount,
   focusOptions,
-  onRollDice,
-  onSmartMutate,
+  onRandomizeAll,
+  onMutateParams,
   onReplay,
   onAiSuggest,
-  onSetMutationFocus,
+  onSetMutationTarget,
   onSetMutationAmount,
 }) => (
   <>
-    {/* Roll Dice */}
+    {/* Randomize All */}
     <button
-      onClick={onRollDice}
+      onClick={onRandomizeAll}
       disabled={isLoading}
       className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-      title="Roll Dice — full random (Enter/N)"
+      title="Randomize All — full random (Enter/N)"
     >
       <Dice5 size={16} />
       Roll
@@ -46,23 +46,23 @@ export const GenerationControls: React.FC<Props> = ({
       </span>
     </button>
 
-    {/* Smart Mutate */}
+    {/* Mutate Params */}
     <button
-      onClick={onSmartMutate}
+      onClick={onMutateParams}
       disabled={isLoading}
       className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold py-2 px-3 rounded-lg transition-colors"
-      title="Smart Mutate — tweak current sound"
+      title="Mutate Params — tweak current sound"
     >
       <Wand2 size={16} />
       Mutate
     </button>
 
-    {/* Mutation focus dropdown */}
+    {/* Mutation target dropdown */}
     <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-neutral-500 font-mono uppercase">Focus:</span>
+      <span className="text-[10px] text-neutral-500 font-mono uppercase">Target:</span>
       <select
-        value={mutationFocus}
-        onChange={(e) => onSetMutationFocus(e.target.value as MutationFocus)}
+        value={mutationTarget}
+        onChange={(e) => onSetMutationTarget(e.target.value as MutationFocus)}
         className="bg-neutral-800 text-neutral-300 text-xs rounded px-2 py-1.5 border border-neutral-700 focus:border-emerald-600 outline-none"
       >
         {focusOptions.map((opt) => (

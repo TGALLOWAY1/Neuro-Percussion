@@ -16,6 +16,11 @@ from engine.core.params import get_param
 
 logger = logging.getLogger(__name__)
 
+# Shell detuning in cents for FDN delay lines (creates richness via slight pitch offsets)
+FDN_DETUNE_CENTS = [0.0, 5.0, -7.0, 12.0]
+# Wire noise BP sweep: start → end frequency over 50ms
+WIRE_SWEEP_START_HZ = 9000.0
+WIRE_SWEEP_END_HZ = 3500.0
 
 from engine.params.spec_resolver import resolve_snare_spec_params  # noqa: F401 — re-exported for backward compat
 
@@ -193,7 +198,7 @@ class SnareEngine:
         exciter_clipped = Effects.hard_clip(exciter_eq, threshold_db=-2.0)
 
         # ---------- Shell (FDN with Hadamard + stateful LPF) ----------
-        detune_cents = torch.tensor([0.0, 5.0, -7.0, 12.0])
+        detune_cents = torch.tensor(FDN_DETUNE_CENTS)
         pitch_mults = torch.pow(2.0, detune_cents / 1200.0)
         actual_freqs = fund_freq * pitch_mults
         delay_lens = self.sample_rate / actual_freqs
@@ -267,7 +272,7 @@ class SnareEngine:
         n_sweep = int(sweep_duration_s * self.sample_rate)
         n_sweep = min(n_sweep, num_samples)
         t_sweep = torch.linspace(0, 1, n_sweep)
-        center_sweep = 9000.0 - (9000.0 - 3500.0) * t_sweep
+        center_sweep = WIRE_SWEEP_START_HZ - (WIRE_SWEEP_START_HZ - WIRE_SWEEP_END_HZ) * t_sweep
         wires_sig = torch.zeros_like(t)
         
         # Optimize: process in larger chunks and vectorize where possible
@@ -281,7 +286,7 @@ class SnareEngine:
             seg_bp = Filter.bandpass(seg, self.sample_rate, fc, q=0.8)
             wires_sig[i:end_i] = seg_bp
         if n_sweep < num_samples:
-            tail_bp = Filter.bandpass(noise[n_sweep:], self.sample_rate, 3500.0, q=0.8)
+            tail_bp = Filter.bandpass(noise[n_sweep:], self.sample_rate, WIRE_SWEEP_END_HZ, q=0.8)
             wires_sig[n_sweep:] = tail_bp
         
         # Apply wire filter HPF if spec param exists

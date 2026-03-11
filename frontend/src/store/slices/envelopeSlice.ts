@@ -42,7 +42,7 @@ export const createEnvelopeSlice: StateCreator<
 > = (set, get) => ({
   // Initial state
   bezierEnvelopes: {},
-  timingMs: 500,
+  masterDurationMs: 500,
   activeLayer: "SUB",
   envelopeMode: "AMP",
 
@@ -66,7 +66,7 @@ export const createEnvelopeSlice: StateCreator<
     });
 
     // Convert Bezier nodes back to envelope params and update
-    const { instrument, timingMs } = get();
+    const { instrument, masterDurationMs } = get();
     const spec = getEnvelopeSpec(instrument);
     const envSpec = spec.envelopes.find((e) => e.id === envelopeId);
     if (!envSpec) return;
@@ -74,7 +74,7 @@ export const createEnvelopeSlice: StateCreator<
     const paramIds = getEnvelopeParamIds(envSpec);
     if (!paramIds) return;
 
-    const newParams = envelopeToParams(envelope, envSpec.mode as "AD" | "AHD", timingMs, paramIds);
+    const newParams = envelopeToParams(envelope, envSpec.mode as "AD" | "AHD", masterDurationMs, paramIds);
 
     // Update envelope params without re-triggering Bezier sync
     set((s) => {
@@ -111,9 +111,9 @@ export const createEnvelopeSlice: StateCreator<
     });
   },
 
-  setTimingMs: (ms) => {
+  setMasterDurationMs: (ms) => {
     set((s) => {
-      s.timingMs = ms;
+      s.masterDurationMs = ms;
     });
   },
 });

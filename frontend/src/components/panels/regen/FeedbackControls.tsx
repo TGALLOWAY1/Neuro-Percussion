@@ -5,18 +5,18 @@ import { ThumbsUp, ThumbsDown } from "lucide-react";
 import clsx from "clsx";
 
 interface Props {
-  feedbackSent: number | null;
+  lastFeedbackLabel: number | null;
   onSubmitFeedback: (label: number) => void;
 }
 
-export const FeedbackControls: React.FC<Props> = ({ feedbackSent, onSubmitFeedback }) => (
+export const FeedbackControls: React.FC<Props> = ({ lastFeedbackLabel, onSubmitFeedback }) => (
   <div className="flex gap-1">
     <button
       onClick={() => onSubmitFeedback(0)}
-      disabled={feedbackSent !== null}
+      disabled={lastFeedbackLabel !== null}
       className={clsx(
         "p-2 rounded hover:bg-neutral-800 transition-colors",
-        feedbackSent === 0 ? "text-red-500" : "text-neutral-500"
+        lastFeedbackLabel === 0 ? "text-red-500" : "text-neutral-500"
       )}
       title="Bad sound"
     >
@@ -24,10 +24,10 @@ export const FeedbackControls: React.FC<Props> = ({ feedbackSent, onSubmitFeedba
     </button>
     <button
       onClick={() => onSubmitFeedback(1)}
-      disabled={feedbackSent !== null}
+      disabled={lastFeedbackLabel !== null}
       className={clsx(
         "p-2 rounded hover:bg-neutral-800 transition-colors",
-        feedbackSent === 1 ? "text-emerald-500" : "text-neutral-500"
+        lastFeedbackLabel === 1 ? "text-emerald-500" : "text-neutral-500"
       )}
       title="Good sound"
     >

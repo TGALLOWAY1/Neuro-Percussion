@@ -59,7 +59,7 @@ export const createAudioSlice: StateCreator<
       s.instrument = inst;
       s.params = macroDefaults;
       s.envelopeParams = envDefaults;
-      s.feedbackSent = null;
+      s.lastFeedbackLabel = null;
       s.activeLayer = "SUB";
     });
     // Sync Bezier envelopes from new defaults
@@ -136,7 +136,7 @@ export const createAudioSlice: StateCreator<
 
     set((s) => {
       s.isLoading = true;
-      s.feedbackSent = null;
+      s.lastFeedbackLabel = null;
       s.error = null;
     });
 

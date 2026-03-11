@@ -15,6 +15,8 @@ from engine.core.params import get_param
 
 logger = logging.getLogger(__name__)
 
+# Bell-like harmonic series for metallic character
+HAT_HARMONICS = [1.0, 1.5, 1.6, 1.8, 2.2, 3.2]
 
 from engine.params.spec_resolver import resolve_hat_spec_params  # noqa: F401 — re-exported for backward compat
 
@@ -109,7 +111,7 @@ class HatEngine:
             base_hz = metal_base_hz
         else:
             base_hz = 300.0 + (color * 200.0)
-        ratios = torch.tensor([1.0, 1.5, 1.6, 1.8, 2.2, 3.2])
+        ratios = torch.tensor(HAT_HARMONICS)
         jitter = get_param(params, "hat.metal.ratio_jitter", 0.1)
         try:
             jitter = float(jitter)

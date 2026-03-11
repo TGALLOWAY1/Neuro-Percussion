@@ -32,14 +32,14 @@ describe("usePercussionStore", () => {
       audioUrl: null,
       isLoading: false,
       error: null,
-      feedbackSent: null,
+      lastFeedbackLabel: null,
       kit: {},
       isExporting: false,
       activeLayer: "SUB",
       envelopeMode: "AMP",
       bezierEnvelopes: {},
-      timingMs: 500,
-      mutationFocus: "all",
+      masterDurationMs: 500,
+      mutationTarget: "all",
       mutationAmount: 0.3,
       feedbackHistory: [],
     });
@@ -106,11 +106,11 @@ describe("usePercussionStore", () => {
 
   // ── Mutation Controls ──────────────────────────────
 
-  describe("setMutationFocus", () => {
-    it("sets mutation focus", () => {
-      const { setMutationFocus } = usePercussionStore.getState();
-      setMutationFocus("pitch");
-      expect(usePercussionStore.getState().mutationFocus).toBe("pitch");
+  describe("setMutationTarget", () => {
+    it("sets mutation target", () => {
+      const { setMutationTarget } = usePercussionStore.getState();
+      setMutationTarget("pitch");
+      expect(usePercussionStore.getState().mutationTarget).toBe("pitch");
     });
   });
 
@@ -184,13 +184,13 @@ describe("usePercussionStore", () => {
   // ── Feedback ───────────────────────────────────────
 
   describe("submitFeedback", () => {
-    it("calls API and updates feedbackSent", async () => {
+    it("calls API and updates lastFeedbackLabel", async () => {
       vi.mocked(api.sendFeedback).mockResolvedValue(undefined);
 
       await usePercussionStore.getState().submitFeedback(1);
 
       expect(api.sendFeedback).toHaveBeenCalledWith("kick", expect.any(Object), 42, 1);
-      expect(usePercussionStore.getState().feedbackSent).toBe(1);
+      expect(usePercussionStore.getState().lastFeedbackLabel).toBe(1);
     });
 
     it("appends to feedback history", async () => {
@@ -254,12 +254,12 @@ describe("usePercussionStore", () => {
     });
   });
 
-  // ── Timing ─────────────────────────────────────────
+  // ── Master Duration ─────────────────────────────────
 
-  describe("setTimingMs", () => {
-    it("updates timing value", () => {
-      usePercussionStore.getState().setTimingMs(1000);
-      expect(usePercussionStore.getState().timingMs).toBe(1000);
+  describe("setMasterDurationMs", () => {
+    it("updates master duration value", () => {
+      usePercussionStore.getState().setMasterDurationMs(1000);
+      expect(usePercussionStore.getState().masterDurationMs).toBe(1000);
     });
   });
 
@@ -273,16 +273,16 @@ describe("usePercussionStore", () => {
     });
   });
 
-  // ── Roll Dice ──────────────────────────────────────
+  // ── Randomize All ──────────────────────────────────
 
-  describe("rollDice", () => {
+  describe("randomizeAll", () => {
     it("randomizes macro params and clears feedback", () => {
-      usePercussionStore.setState({ feedbackSent: 1 });
+      usePercussionStore.setState({ lastFeedbackLabel: 1 });
 
-      usePercussionStore.getState().rollDice();
+      usePercussionStore.getState().randomizeAll();
 
-      // feedbackSent should be cleared
-      expect(usePercussionStore.getState().feedbackSent).toBeNull();
+      // lastFeedbackLabel should be cleared
+      expect(usePercussionStore.getState().lastFeedbackLabel).toBeNull();
 
       // Params should have been replaced with randomized values
       const newParams = usePercussionStore.getState().params;
@@ -290,22 +290,22 @@ describe("usePercussionStore", () => {
     });
   });
 
-  // ── Smart Mutate ───────────────────────────────────
+  // ── Mutate Params ───────────────────────────────────
 
-  describe("smartMutate", () => {
-    it("clears feedbackSent on mutation", () => {
-      usePercussionStore.setState({ feedbackSent: 1 });
-      usePercussionStore.getState().smartMutate();
-      expect(usePercussionStore.getState().feedbackSent).toBeNull();
+  describe("mutateParams", () => {
+    it("clears lastFeedbackLabel on mutation", () => {
+      usePercussionStore.setState({ lastFeedbackLabel: 1 });
+      usePercussionStore.getState().mutateParams();
+      expect(usePercussionStore.getState().lastFeedbackLabel).toBeNull();
     });
 
-    it("respects mutation focus 'macros' by only mutating macros", () => {
+    it("respects mutation target 'macros' by only mutating macros", () => {
       const initialEnvParams = { ...usePercussionStore.getState().envelopeParams };
 
-      usePercussionStore.setState({ mutationFocus: "macros" });
-      usePercussionStore.getState().smartMutate();
+      usePercussionStore.setState({ mutationTarget: "macros" });
+      usePercussionStore.getState().mutateParams();
 
-      // When focus is "macros", envelope params should remain unchanged
+      // When target is "macros", envelope params should remain unchanged
       const afterEnvParams = usePercussionStore.getState().envelopeParams;
       for (const key of Object.keys(initialEnvParams)) {
         expect(afterEnvParams[key]).toBe(initialEnvParams[key]);
