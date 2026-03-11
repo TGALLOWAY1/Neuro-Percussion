@@ -1,11 +1,13 @@
 /**
- * RegenPanel — bottom bar with generate controls, macro sliders, ML feedback, and kit management.
+ * RegenPanel — bottom bar with regenerator controls, mutation settings,
+ * macro sliders, ML feedback, and kit management.
+ * Phase 3: Roll Dice, Smart Mutate, parameter focus, mutation amount.
  */
 
 "use client";
 
 import React from "react";
-import { usePercussionStore } from "@/store/usePercussionStore";
+import { usePercussionStore, type MutationFocus } from "@/store/usePercussionStore";
 import { MacroSlider } from "../MacroSlider";
 import { getEnvelopeSpec } from "@/audio/params";
 import type { InstrumentType } from "@/types";
@@ -18,10 +20,27 @@ import {
   Download,
   Plus,
   Check,
+  Dice5,
+  Wand2,
 } from "lucide-react";
 import clsx from "clsx";
 
 const INSTRUMENTS: InstrumentType[] = ["kick", "snare", "hat"];
+
+/** Available mutation focus options (filtered by current instrument's envelopes) */
+function getMutationFocusOptions(instrument: InstrumentType): { value: MutationFocus; label: string }[] {
+  const spec = getEnvelopeSpec(instrument);
+  const opts: { value: MutationFocus; label: string }[] = [
+    { value: "all", label: "All" },
+  ];
+  for (const env of spec.envelopes) {
+    opts.push({ value: env.id as MutationFocus, label: env.label });
+  }
+  if (spec.macroParams && spec.macroParams.length > 0) {
+    opts.push({ value: "macros", label: "Macros" });
+  }
+  return opts;
+}
 
 export const RegenPanel: React.FC = () => {
   const instrument = usePercussionStore((s) => s.instrument);
@@ -31,42 +50,92 @@ export const RegenPanel: React.FC = () => {
   const kit = usePercussionStore((s) => s.kit);
   const isExporting = usePercussionStore((s) => s.isExporting);
   const isLoading = usePercussionStore((s) => s.isLoading);
+  const mutationFocus = usePercussionStore((s) => s.mutationFocus);
+  const mutationAmount = usePercussionStore((s) => s.mutationAmount);
 
   const updateParam = usePercussionStore((s) => s.updateParam);
-  const nextSeed = usePercussionStore((s) => s.nextSeed);
   const generate = usePercussionStore((s) => s.generate);
   const submitFeedback = usePercussionStore((s) => s.submitFeedback);
   const aiSuggest = usePercussionStore((s) => s.aiSuggest);
   const addToKit = usePercussionStore((s) => s.addToKit);
   const exportCurrentKit = usePercussionStore((s) => s.exportCurrentKit);
+  const rollDice = usePercussionStore((s) => s.rollDice);
+  const smartMutate = usePercussionStore((s) => s.smartMutate);
+  const setMutationFocus = usePercussionStore((s) => s.setMutationFocus);
+  const setMutationAmount = usePercussionStore((s) => s.setMutationAmount);
 
   const spec = getEnvelopeSpec(instrument);
   const macroParams = spec.macroParams ?? [];
   const inKit = kit[instrument]?.seed === seed;
+  const focusOptions = getMutationFocusOptions(instrument);
 
   return (
     <div className="px-6 py-4 flex flex-col gap-4">
-      {/* Top row: actions + feedback */}
+      {/* Top row: generation + mutation controls */}
       <div className="flex items-center gap-3">
-        {/* Generate */}
+        {/* Roll Dice — full random */}
         <button
-          onClick={nextSeed}
+          onClick={rollDice}
           disabled={isLoading}
           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-          title="Generate New (Enter/N)"
+          title="Roll Dice — full random (Enter/N)"
         >
-          <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-          Generate
+          <Dice5 size={16} />
+          Roll
           <span className="text-emerald-200 text-xs font-mono opacity-70">
             #{seed}
           </span>
         </button>
 
+        {/* Smart Mutate — constrained */}
+        <button
+          onClick={smartMutate}
+          disabled={isLoading}
+          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold py-2 px-3 rounded-lg transition-colors"
+          title="Smart Mutate — tweak current sound"
+        >
+          <Wand2 size={16} />
+          Mutate
+        </button>
+
+        {/* Mutation focus dropdown */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-neutral-500 font-mono uppercase">Focus:</span>
+          <select
+            value={mutationFocus}
+            onChange={(e) => setMutationFocus(e.target.value as MutationFocus)}
+            className="bg-neutral-800 text-neutral-300 text-xs rounded px-2 py-1.5 border border-neutral-700 focus:border-emerald-600 outline-none"
+          >
+            {focusOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Mutation amount slider */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-neutral-500 font-mono uppercase">Amt:</span>
+          <input
+            type="range"
+            min={0.05}
+            max={1}
+            step={0.05}
+            value={mutationAmount}
+            onChange={(e) => setMutationAmount(Number(e.target.value))}
+            className="w-16 h-1 accent-amber-500"
+          />
+          <span className="text-[10px] text-amber-400 font-mono w-8">
+            {Math.round(mutationAmount * 100)}%
+          </span>
+        </div>
+
         {/* Replay */}
         <button
           onClick={() => generate()}
           className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors"
-          title="Replay"
+          title="Replay (Space)"
         >
           <Play size={16} />
         </button>
@@ -94,6 +163,7 @@ export const RegenPanel: React.FC = () => {
               "p-2 rounded hover:bg-neutral-800 transition-colors",
               feedbackSent === 0 ? "text-red-500" : "text-neutral-500"
             )}
+            title="Bad sound"
           >
             <ThumbsDown size={16} />
           </button>
@@ -104,6 +174,7 @@ export const RegenPanel: React.FC = () => {
               "p-2 rounded hover:bg-neutral-800 transition-colors",
               feedbackSent === 1 ? "text-emerald-500" : "text-neutral-500"
             )}
+            title="Good sound"
           >
             <ThumbsUp size={16} />
           </button>
@@ -165,7 +236,7 @@ export const RegenPanel: React.FC = () => {
               kit[inst] ? "text-emerald-500 bg-emerald-950" : "text-neutral-700"
             )}
           >
-            {inst} {kit[inst] ? "✓" : "—"}
+            {inst} {kit[inst] ? "\u2713" : "\u2014"}
           </span>
         ))}
       </div>

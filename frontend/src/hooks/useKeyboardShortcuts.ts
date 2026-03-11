@@ -31,7 +31,11 @@ export function useKeyboardShortcuts() {
         case "Enter":
         case "KeyN":
           e.preventDefault();
-          store.nextSeed();
+          store.rollDice();
+          break;
+        case "KeyR":
+          e.preventDefault();
+          store.smartMutate();
           break;
         case "ArrowRight": {
           e.preventDefault();

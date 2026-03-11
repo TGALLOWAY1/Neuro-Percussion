@@ -37,6 +37,7 @@ import { paramsToEnvelope, envelopeToParams } from "@/audio/bezier";
 
 export type LayerTab = "SUB" | "CLICK1" | "CLICK2" | "CLICK3";
 export type EnvelopeViewMode = "PITCH" | "AMP";
+export type MutationFocus = "all" | "amp" | "pitch" | "click" | "body" | "noise" | "snap" | "macros";
 
 export interface KitSlot {
   schemaVersion: 1;
@@ -72,6 +73,11 @@ export interface PercussionState {
   // Bezier envelope state (Phase 2)
   bezierEnvelopes: Record<string, BezierEnvelope>; // keyed by envelope id ("amp", "pitch", etc.)
   timingMs: number; // master TIMING fader (total duration in ms)
+
+  // Regenerator state (Phase 3)
+  mutationFocus: MutationFocus; // which param group to focus mutations on
+  mutationAmount: number; // 0-1 intensity of Smart Mutate
+  feedbackHistory: Array<{ instrument: InstrumentType; seed: number; label: number }>;
 }
 
 export interface PercussionActions {
@@ -96,6 +102,12 @@ export interface PercussionActions {
   // ML feedback
   submitFeedback: (label: number) => Promise<void>;
   aiSuggest: () => Promise<void>;
+
+  // Regenerator (Phase 3)
+  rollDice: () => void;
+  smartMutate: () => void;
+  setMutationFocus: (focus: MutationFocus) => void;
+  setMutationAmount: (amount: number) => void;
 
   // Kit
   addToKit: () => void;
@@ -166,6 +178,9 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
     envelopeMode: "AMP",
     bezierEnvelopes: {},
     timingMs: 500,
+    mutationFocus: "all" as MutationFocus,
+    mutationAmount: 0.3,
+    feedbackHistory: [],
 
     // --- Helpers ---
     _getEngineParams: (inst, macroParams, envParams, seedVal, kitPatch) => {
@@ -301,6 +316,11 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
         await sendFeedback(instrument, params, seed, label);
         set((s) => {
           s.feedbackSent = label;
+          s.feedbackHistory.push({ instrument, seed, label });
+          // Keep last 50 entries
+          if (s.feedbackHistory.length > 50) {
+            s.feedbackHistory = s.feedbackHistory.slice(-50);
+          }
         });
       } catch (err) {
         console.error("Feedback failed", err);
@@ -323,6 +343,91 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
           s.isLoading = false;
         });
       }
+    },
+
+    // --- Regenerator (Phase 3) ---
+    rollDice: () => {
+      const { instrument } = get();
+      const newSeed = Math.floor(Math.random() * 100000);
+      const newEnvelopeParams = getRandomEnvelopeParams(instrument);
+      // Also randomize macros
+      const spec = getEnvelopeSpec(instrument);
+      const newMacros: Record<string, number> = {};
+      for (const p of spec.macroParams ?? []) {
+        newMacros[p.id] = p.min + Math.random() * (p.max - p.min);
+        if (p.step) {
+          newMacros[p.id] = Math.round(newMacros[p.id] / p.step) * p.step;
+        }
+      }
+
+      set((s) => {
+        s.params = newMacros;
+        s.feedbackSent = null;
+      });
+
+      get().generate({ seed: newSeed, params: newMacros, envelopeParams: newEnvelopeParams });
+      setTimeout(() => get().syncBezierFromParams(), 50);
+    },
+
+    smartMutate: () => {
+      const { instrument, params, envelopeParams, mutationFocus, mutationAmount } = get();
+      const spec = getEnvelopeSpec(instrument);
+      const newSeed = Math.floor(Math.random() * 100000);
+
+      // Mutate envelope params based on focus
+      const newEnvParams = { ...envelopeParams };
+      const envSpecs = spec.envelopes;
+
+      for (const envSpec of envSpecs) {
+        // If focus is set, only mutate matching envelope group
+        if (mutationFocus !== "all" && mutationFocus !== "macros" && envSpec.id !== mutationFocus) {
+          continue;
+        }
+        if (mutationFocus === "macros") continue;
+
+        for (const p of envSpec.params) {
+          const current = newEnvParams[p.id] ?? p.default;
+          const range = p.max - p.min;
+          const jitter = (Math.random() - 0.5) * 2 * range * mutationAmount;
+          let newVal = current + jitter;
+          if (p.step) newVal = Math.round(newVal / p.step) * p.step;
+          newEnvParams[p.id] = Math.max(p.min, Math.min(p.max, newVal));
+        }
+      }
+
+      // Mutate macro params if focus is "all" or "macros"
+      const newMacros = { ...params };
+      if (mutationFocus === "all" || mutationFocus === "macros") {
+        for (const p of spec.macroParams ?? []) {
+          const current = newMacros[p.id] ?? p.default;
+          const range = p.max - p.min;
+          const jitter = (Math.random() - 0.5) * 2 * range * mutationAmount;
+          let newVal = current + jitter;
+          if (p.step) newVal = Math.round(newVal / p.step) * p.step;
+          newMacros[p.id] = Math.max(p.min, Math.min(p.max, newVal));
+        }
+      }
+
+      set((s) => {
+        s.envelopeParams = newEnvParams;
+        s.params = newMacros;
+        s.feedbackSent = null;
+      });
+
+      get().generate({ seed: newSeed, params: newMacros, envelopeParams: newEnvParams });
+      setTimeout(() => get().syncBezierFromParams(), 50);
+    },
+
+    setMutationFocus: (focus) => {
+      set((s) => {
+        s.mutationFocus = focus;
+      });
+    },
+
+    setMutationAmount: (amount) => {
+      set((s) => {
+        s.mutationAmount = amount;
+      });
     },
 
     // --- Kit ---
