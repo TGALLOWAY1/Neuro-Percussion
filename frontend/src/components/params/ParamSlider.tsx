@@ -10,7 +10,7 @@ interface ParamSliderProps {
     onChange: (value: number) => void;
 }
 
-export const ParamSlider: React.FC<ParamSliderProps> = ({ spec, value, onChange }) => {
+export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({ spec, value, onChange }) => {
     const formatter = spec.format || getFormatter(spec.unit);
     const clampedValue = clamp(value, spec.min, spec.max);
     const normalizedValue = (clampedValue - spec.min) / (spec.max - spec.min);
@@ -38,4 +38,5 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({ spec, value, onChange 
             />
         </div>
     );
-};
+});
+ParamSlider.displayName = "ParamSlider";

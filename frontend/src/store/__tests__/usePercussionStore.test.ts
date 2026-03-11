@@ -131,7 +131,7 @@ describe("usePercussionStore", () => {
 
       const { generate } = usePercussionStore.getState();
 
-      const promise = generate({ engineParams: { seed: 1 } as any });
+      const promise = generate({ engineParams: { seed: 1 } });
       expect(usePercussionStore.getState().isLoading).toBe(true);
 
       await promise;
@@ -142,7 +142,7 @@ describe("usePercussionStore", () => {
       const mockBlob = new Blob(["audio"], { type: "audio/wav" });
       vi.mocked(api.generateAudio).mockResolvedValue(mockBlob);
 
-      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } as any });
+      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } });
 
       expect(createObjectURLMock).toHaveBeenCalledWith(mockBlob);
       expect(usePercussionStore.getState().audioUrl).toBe("blob:mock-url");
@@ -155,7 +155,7 @@ describe("usePercussionStore", () => {
       // Set an initial audioUrl
       usePercussionStore.setState({ audioUrl: "blob:old-url" });
 
-      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } as any });
+      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } });
 
       expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:old-url");
     });
@@ -163,7 +163,7 @@ describe("usePercussionStore", () => {
     it("sets error state on generation failure", async () => {
       vi.mocked(api.generateAudio).mockRejectedValue(new Error("Network error"));
 
-      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } as any });
+      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } });
 
       expect(usePercussionStore.getState().error).toBe("Network error");
       expect(usePercussionStore.getState().isLoading).toBe(false);
@@ -175,7 +175,7 @@ describe("usePercussionStore", () => {
       const mockBlob = new Blob(["audio"], { type: "audio/wav" });
       vi.mocked(api.generateAudio).mockResolvedValue(mockBlob);
 
-      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } as any });
+      await usePercussionStore.getState().generate({ engineParams: { seed: 1 } });
 
       expect(usePercussionStore.getState().error).toBeNull();
     });

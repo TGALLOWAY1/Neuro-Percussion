@@ -11,7 +11,7 @@ interface EnvelopeGraphProps {
     height?: number;
 }
 
-export const EnvelopeGraph: React.FC<EnvelopeGraphProps> = ({
+export const EnvelopeGraph: React.FC<EnvelopeGraphProps> = React.memo(({
     mode,
     params,
     values,
@@ -102,4 +102,5 @@ export const EnvelopeGraph: React.FC<EnvelopeGraphProps> = ({
             ))}
         </svg>
     );
-};
+});
+EnvelopeGraph.displayName = "EnvelopeGraph";

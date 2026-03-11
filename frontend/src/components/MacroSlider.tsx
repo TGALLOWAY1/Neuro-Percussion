@@ -9,7 +9,7 @@ interface MacroSliderProps {
     onChange: (val: number) => void;
 }
 
-export const MacroSlider: React.FC<MacroSliderProps> = ({
+export const MacroSlider: React.FC<MacroSliderProps> = React.memo(({
     label,
     value,
     min,
@@ -34,4 +34,5 @@ export const MacroSlider: React.FC<MacroSliderProps> = ({
             />
         </div>
     );
-};
+});
+MacroSlider.displayName = "MacroSlider";
