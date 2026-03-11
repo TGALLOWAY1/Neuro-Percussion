@@ -10,7 +10,7 @@ interface ParamToggleProps {
     onChange: (value: number) => void;
 }
 
-export const ParamToggle: React.FC<ParamToggleProps> = ({ spec, value, onChange }) => {
+export const ParamToggle: React.FC<ParamToggleProps> = React.memo(({ spec, value, onChange }) => {
     const formatter = spec.format || getFormatter(spec.unit);
     const isOn = value > 0.5;
 
@@ -40,4 +40,5 @@ export const ParamToggle: React.FC<ParamToggleProps> = ({ spec, value, onChange 
             </span>
         </div>
     );
-};
+});
+ParamToggle.displayName = "ParamToggle";

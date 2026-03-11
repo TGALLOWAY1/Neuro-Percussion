@@ -7,3 +7,4 @@ data/
 frontend/.next/
 frontend/node_modules/
 renders/
+node_modules/
