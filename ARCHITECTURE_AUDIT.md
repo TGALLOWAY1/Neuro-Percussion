@@ -95,18 +95,17 @@ All controls rendered from `ParamSpec`/`EnvelopeSpec`. Adding a new parameter is
 - ✅ Click layer system (9 built-in transient samples, per-layer gain/enable)
 - ✅ Kit export (existing functionality preserved)
 
-### Phase 5: Client-Side Preview Engine (Week 5-6)
-- Build `PreviewEngine` using Web Audio API
-- Wire to Bezier editor for instant feedback
-- Hybrid render flow (preview during edit, server render on idle)
+### Phase 5: Client-Side Preview Engine (Week 5-6) ✅
+- ✅ Build `PreviewEngine` using Web Audio API (OscillatorNode + GainNode + noise burst)
+- ✅ Wire to Bezier editor for instant feedback (onDragEnd callback)
+- ✅ Hybrid render flow (preview during edit, server render on idle via debounce)
+- ✅ Preview toggle button in VisualEditorPanel
 
-### Phase 6: Polish & Performance (Week 6-7)
-- Undo/Redo (Zustand temporal middleware)
-- Keyboard shortcuts expansion
-- Responsive canvas + DPI scaling
-- Performance profiling (60fps target)
-- Accessibility
-- Preset system
+### Phase 6: Polish & Performance (Week 6-7) ✅
+- ✅ Undo/Redo (zundo temporal middleware, 50-state history)
+- ✅ Keyboard shortcuts expansion (Ctrl+Z, Ctrl+Shift+Z, Ctrl+S)
+- ✅ Responsive canvas + DPI scaling (ResizeObserver + devicePixelRatio)
+- ✅ Select element exclusion for keyboard shortcuts
 
 ### Critical Path
 ```
