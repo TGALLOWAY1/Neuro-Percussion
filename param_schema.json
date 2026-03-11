@@ -1,0 +1,806 @@
+{
+  "hat": {
+    "color": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "dirt": {
+      "default": 0.2,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.air.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 20.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.air.amp.decay_ms": {
+      "default": 45.0,
+      "group": "layer_adsr",
+      "max": 150.0,
+      "min": 10.0,
+      "type": "float"
+    },
+    "hat.air.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.air.amp.sustain": {
+      "default": 1.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.air.gain_db": {
+      "default": 0.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "hat.air.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "hat.chick.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 10.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.chick.amp.decay_ms": {
+      "default": 10.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 1.0,
+      "type": "float"
+    },
+    "hat.chick.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 30.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.chick.amp.sustain": {
+      "default": 1.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.chick.gain_db": {
+      "default": 0.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "hat.chick.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "hat.macros.attack_ms": {
+      "default": 0.0,
+      "group": "macros",
+      "max": 5.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.macros.chick": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.macros.dirt": {
+      "default": 0.2,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.macros.length_ms": {
+      "default": 500.0,
+      "group": "macros",
+      "max": 1000.0,
+      "min": 200.0,
+      "type": "float"
+    },
+    "hat.macros.open": {
+      "default": 0.0,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.macros.sheen": {
+      "default": 0.4,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.macros.tightness": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.metal.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 20.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.metal.amp.decay_ms": {
+      "default": 70.0,
+      "group": "layer_adsr",
+      "max": 200.0,
+      "min": 20.0,
+      "type": "float"
+    },
+    "hat.metal.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.metal.amp.sustain": {
+      "default": 1.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "hat.metal.gain_db": {
+      "default": 0.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "hat.metal.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "hat.metal.ratio_jitter": {
+      "default": 0.1,
+      "group": "advanced",
+      "max": 0.5,
+      "min": 0.0,
+      "type": "float"
+    },
+    "sheen": {
+      "default": 0.4,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "tightness": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    }
+  },
+  "kick": {
+    "blend": {
+      "default": 0.3,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "click_amount": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "click_snap": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "distance_ms": {
+      "default": 20.0,
+      "group": "macro",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.click.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 20.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.click.amp.decay_ms": {
+      "default": 6.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 1.0,
+      "type": "float"
+    },
+    "kick.click.amp.release_ms": {
+      "default": 5.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.click.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.click.gain_db": {
+      "default": -6.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "kick.click.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "kick.knock.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 30.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.knock.amp.decay_ms": {
+      "default": 120.0,
+      "group": "layer_adsr",
+      "max": 300.0,
+      "min": 20.0,
+      "type": "float"
+    },
+    "kick.knock.amp.release_ms": {
+      "default": 15.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.knock.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.knock.decay_ms": {
+      "default": 50.0,
+      "group": "advanced",
+      "max": 200.0,
+      "min": 10.0,
+      "type": "float"
+    },
+    "kick.knock.freq_norm": {
+      "default": 0.5,
+      "group": "advanced",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.knock.gain_db": {
+      "default": -4.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "kick.knock.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "kick.macros.attack_ms": {
+      "default": 0.0,
+      "group": "macros",
+      "max": 5.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.click": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.click_tight": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.decay_ms": {
+      "default": 180.0,
+      "group": "macros",
+      "max": 500.0,
+      "min": 50.0,
+      "type": "float"
+    },
+    "kick.macros.length_ms": {
+      "default": 500.0,
+      "group": "macros",
+      "max": 1000.0,
+      "min": 200.0,
+      "type": "float"
+    },
+    "kick.macros.pitch_drop": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.punch": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.room": {
+      "default": 0.3,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.macros.tone": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.room.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.room.amp.decay_ms": {
+      "default": 300.0,
+      "group": "layer_adsr",
+      "max": 500.0,
+      "min": 100.0,
+      "type": "float"
+    },
+    "kick.room.amp.release_ms": {
+      "default": 20.0,
+      "group": "layer_adsr",
+      "max": 150.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.room.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.room.gain_db": {
+      "default": -10.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "kick.room.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "kick.sub.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.sub.amp.decay_ms": {
+      "default": 180.0,
+      "group": "layer_adsr",
+      "max": 500.0,
+      "min": 50.0,
+      "type": "float"
+    },
+    "kick.sub.amp.release_ms": {
+      "default": 10.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.sub.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "kick.sub.gain_db": {
+      "default": 0.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "kick.sub.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "punch_decay": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.1,
+      "type": "float"
+    },
+    "room_air": {
+      "default": 0.3,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "room_tone_freq": {
+      "default": 150.0,
+      "group": "macro",
+      "max": 300.0,
+      "min": 50.0,
+      "type": "float"
+    },
+    "tune": {
+      "default": 45.0,
+      "group": "macro",
+      "max": 80.0,
+      "min": 30.0,
+      "type": "float"
+    }
+  },
+  "snare": {
+    "body": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "crack": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_air.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 10.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_air.amp.decay_ms": {
+      "default": 20.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 5.0,
+      "type": "float"
+    },
+    "snare.exciter_air.amp.release_ms": {
+      "default": 3.0,
+      "group": "layer_adsr",
+      "max": 30.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_air.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_air.gain_db": {
+      "default": -200.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -200.0,
+      "type": "float"
+    },
+    "snare.exciter_air.mute": {
+      "default": true,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "snare.exciter_body.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 10.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_body.amp.decay_ms": {
+      "default": 50.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 10.0,
+      "type": "float"
+    },
+    "snare.exciter_body.amp.release_ms": {
+      "default": 5.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_body.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.exciter_body.gain_db": {
+      "default": -200.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -200.0,
+      "type": "float"
+    },
+    "snare.exciter_body.mute": {
+      "default": true,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "snare.macros.attack_ms": {
+      "default": 0.0,
+      "group": "macros",
+      "max": 10.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.macros.body": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.macros.crack": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.macros.length_ms": {
+      "default": 500.0,
+      "group": "macros",
+      "max": 1000.0,
+      "min": 200.0,
+      "type": "float"
+    },
+    "snare.macros.room": {
+      "default": 0.0,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.macros.tension": {
+      "default": 0.5,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.macros.wires": {
+      "default": 0.4,
+      "group": "macros",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.room.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.room.amp.decay_ms": {
+      "default": 400.0,
+      "group": "layer_adsr",
+      "max": 500.0,
+      "min": 100.0,
+      "type": "float"
+    },
+    "snare.room.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 150.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.room.amp.sustain": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.room.gain_db": {
+      "default": -200.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -200.0,
+      "type": "float"
+    },
+    "snare.room.mute": {
+      "default": true,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "snare.shell.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.shell.amp.decay_ms": {
+      "default": 500.0,
+      "group": "layer_adsr",
+      "max": 500.0,
+      "min": 200.0,
+      "type": "float"
+    },
+    "snare.shell.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.shell.amp.sustain": {
+      "default": 1.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.shell.gain_db": {
+      "default": 0.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "snare.shell.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "snare.wires.amp.attack_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 50.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.wires.amp.decay_ms": {
+      "default": 140.0,
+      "group": "layer_adsr",
+      "max": 500.0,
+      "min": 50.0,
+      "type": "float"
+    },
+    "snare.wires.amp.release_ms": {
+      "default": 0.0,
+      "group": "layer_adsr",
+      "max": 100.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.wires.amp.sustain": {
+      "default": 1.0,
+      "group": "layer_adsr",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "snare.wires.gain_db": {
+      "default": -3.0,
+      "group": "layer_gain",
+      "max": 12.0,
+      "min": -60.0,
+      "type": "float"
+    },
+    "snare.wires.mute": {
+      "default": false,
+      "group": "layer_gain",
+      "max": true,
+      "min": false,
+      "type": "bool"
+    },
+    "tone": {
+      "default": 0.5,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    },
+    "wire": {
+      "default": 0.4,
+      "group": "macro",
+      "max": 1.0,
+      "min": 0.0,
+      "type": "float"
+    }
+  }
+}
