@@ -25,8 +25,8 @@ export const VisualEditorPanel: React.FC = () => {
   const bezierEnvelopes = usePercussionStore((s) => s.bezierEnvelopes);
   const updateBezierEnvelope = usePercussionStore((s) => s.updateBezierEnvelope);
   const syncBezierFromParams = usePercussionStore((s) => s.syncBezierFromParams);
-  const timingMs = usePercussionStore((s) => s.timingMs);
-  const setTimingMs = usePercussionStore((s) => s.setTimingMs);
+  const masterDurationMs = usePercussionStore((s) => s.masterDurationMs);
+  const setMasterDurationMs = usePercussionStore((s) => s.setMasterDurationMs);
   const instrument = usePercussionStore((s) => s.instrument);
   const [previewEnabled, setPreviewEnabled] = React.useState(true);
 
@@ -59,7 +59,7 @@ export const VisualEditorPanel: React.FC = () => {
       frequency: getInstrumentFrequency(store.instrument),
       ampEnvelope: ampEnv,
       pitchEnvelope: pitchEnv,
-      duration: store.timingMs / 1000,
+      duration: store.masterDurationMs / 1000,
       waveform: getInstrumentWaveform(store.instrument),
       clickAmount: (store.envelopeParams["click_amount_pct"] ?? 0) / 100,
       clickDecay: (store.envelopeParams["click_decay_ms"] ?? 12) / 1000,
@@ -103,13 +103,13 @@ export const VisualEditorPanel: React.FC = () => {
             min={50}
             max={3000}
             step={10}
-            value={timingMs}
-            onChange={(e) => setTimingMs(Number(e.target.value))}
+            value={masterDurationMs}
+            onChange={(e) => setMasterDurationMs(Number(e.target.value))}
             className="flex-1 h-1 accent-emerald-500"
-            aria-label={`Timing: ${timingMs} milliseconds`}
+            aria-label={`Timing: ${masterDurationMs} milliseconds`}
           />
           <span className="text-[10px] text-emerald-400 font-mono w-14 text-right" aria-hidden="true">
-            {timingMs} ms
+            {masterDurationMs} ms
           </span>
         </div>
 

@@ -15,143 +15,10 @@ from engine.core.params import get_param
 
 logger = logging.getLogger(__name__)
 
+# Bell-like harmonic series for metallic character
+HAT_HARMONICS = [1.0, 1.5, 1.6, 1.8, 2.2, 3.2]
 
-def resolve_hat_spec_params(params: dict) -> dict:
-    """
-    Map hat.spec.* parameters to internal params.
-    Only applies if any hat.spec.* keys exist.
-    User-provided advanced params take precedence (not overwritten).
-    
-    Returns a dict of implied internal params that should be merged with user params.
-    """
-    # Check if spec params exist
-    spec_prefix = "hat.spec."
-    has_spec = any(key.startswith(spec_prefix) for key in params.keys()) or (
-        "hat" in params and isinstance(params.get("hat"), dict) and "spec" in params.get("hat", {})
-    )
-    
-    if not has_spec:
-        return {}
-    
-    implied = {}
-    
-    # Helper to get spec param with default
-    def get_spec(key: str, default: float) -> float:
-        # Try nested: params["hat"]["spec"][key]
-        if "hat" in params and isinstance(params["hat"], dict):
-            if "spec" in params["hat"] and isinstance(params["hat"]["spec"], dict):
-                if key in params["hat"]["spec"]:
-                    try:
-                        val = params["hat"]["spec"][key]
-                        # Handle bool conversion for is_open and choke_group
-                        if key in ("is_open", "choke_group") and isinstance(val, bool):
-                            return 1.0 if val else 0.0
-                        return float(val)
-                    except (TypeError, ValueError):
-                        pass
-        # Try flat: params["hat.spec.key"]
-        flat_key = f"hat.spec.{key}"
-        val = get_param(params, flat_key, default)
-        try:
-            if key in ("is_open", "choke_group") and isinstance(val, bool):
-                return 1.0 if val else 0.0
-            return float(val)
-        except (TypeError, ValueError):
-            return default
-    
-    # Get spec values
-    metal_pitch_hz = get_spec("metal_pitch_hz", 800.0)
-    dissonance = get_spec("dissonance", 0.7)
-    fm_amount = get_spec("fm_amount", 0.5)
-    hpf_hz = get_spec("hpf_hz", 3000.0)
-    color_hz = get_spec("color_hz", 8000.0)
-    decay_ms = get_spec("decay_ms", 80.0)
-    choke_group = get_spec("choke_group", 1.0)  # default true
-    is_open = get_spec("is_open", 0.0)  # default false
-    attack_ms = get_spec("attack_ms", 0.0)
-    
-    # Clamp to safe ranges
-    metal_pitch_hz = max(300.0, min(10000.0, metal_pitch_hz))
-    dissonance = max(0.0, min(1.0, dissonance))
-    fm_amount = max(0.0, min(1.0, fm_amount))
-    hpf_hz = max(300.0, min(8000.0, hpf_hz))
-    color_hz = max(2000.0, min(15000.0, color_hz))
-    decay_ms = max(20.0, min(2000.0, decay_ms))
-    attack_ms = max(0.0, min(10.0, attack_ms))
-    
-    # Check if user already provided these params
-    def has_user(key: str) -> bool:
-        keys = key.split(".")
-        current = params
-        for k in keys:
-            if not isinstance(current, dict) or k not in current:
-                return False
-            current = current[k]
-        return True
-    
-    # Map to internal params (only if user didn't provide them)
-    
-    # Metal pitch
-    if not has_user("hat.metal.base_hz"):
-        implied.setdefault("hat", {}).setdefault("metal", {})["base_hz"] = metal_pitch_hz
-    
-    # Dissonance -> ratio_jitter
-    if not has_user("hat.metal.ratio_jitter"):
-        # Map dissonance (0..1) to jitter (0..0.2 typical)
-        implied.setdefault("hat", {}).setdefault("metal", {})["ratio_jitter"] = dissonance * 0.2
-    
-    # FM amount -> dirt (conservative mapping)
-    if not has_user("dirt"):
-        # Map fm_amount to dirt conservatively (0..1 -> 0..0.7)
-        implied["dirt"] = fm_amount * 0.7
-    
-    # HPF
-    if not has_user("hat.hpf_hz"):
-        implied.setdefault("hat", {})["hpf_hz"] = hpf_hz
-    
-    # Color emphasis (BP center)
-    if not has_user("hat.color_hz"):
-        implied.setdefault("hat", {})["color_hz"] = color_hz
-    
-    # Envelope mapping (open vs closed)
-    if is_open > 0.5:
-        # Open hat: longer decay, small attack
-        open_decay_ms = max(decay_ms, 600.0)  # Ensure at least 600ms for open
-        open_attack_ms = attack_ms if attack_ms > 0 else 5.0
-        if not has_user("hat.metal.amp.decay_ms"):
-            implied.setdefault("hat", {}).setdefault("metal", {}).setdefault("amp", {})["decay_ms"] = open_decay_ms
-        if not has_user("hat.metal.amp.attack_ms"):
-            implied.setdefault("hat", {}).setdefault("metal", {}).setdefault("amp", {})["attack_ms"] = open_attack_ms
-        if not has_user("hat.air.amp.decay_ms"):
-            implied.setdefault("hat", {}).setdefault("air", {}).setdefault("amp", {})["decay_ms"] = open_decay_ms
-        if not has_user("hat.air.amp.attack_ms"):
-            implied.setdefault("hat", {}).setdefault("air", {}).setdefault("amp", {})["attack_ms"] = open_attack_ms
-    else:
-        # Closed hat: shorter decay, no attack
-        closed_decay_ms = min(decay_ms, 100.0)  # Cap at 100ms for closed
-        if not has_user("hat.metal.amp.decay_ms"):
-            implied.setdefault("hat", {}).setdefault("metal", {}).setdefault("amp", {})["decay_ms"] = closed_decay_ms
-        if not has_user("hat.metal.amp.attack_ms"):
-            implied.setdefault("hat", {}).setdefault("metal", {}).setdefault("amp", {})["attack_ms"] = 0.0
-        if not has_user("hat.air.amp.decay_ms"):
-            implied.setdefault("hat", {}).setdefault("air", {}).setdefault("amp", {})["decay_ms"] = closed_decay_ms
-        if not has_user("hat.air.amp.attack_ms"):
-            implied.setdefault("hat", {}).setdefault("air", {}).setdefault("amp", {})["attack_ms"] = 0.0
-    
-    # Chick layer (always short)
-    if not has_user("hat.chick.amp.decay_ms"):
-        implied.setdefault("hat", {}).setdefault("chick", {}).setdefault("amp", {})["decay_ms"] = 5.0
-    
-    # Choke group (RESEARCH_GUIDANCE: closed hat must cut open tail; host stops open voice on closed trigger)
-    # Backend ensures closed hat uses short decay (closed_decay_ms) so tail is cut when host switches to closed
-    if not has_user("hat.choke_group"):
-        implied.setdefault("hat", {})["choke_group"] = bool(choke_group > 0.5)
-    
-    # is_open flag
-    if not has_user("hat.is_open"):
-        implied.setdefault("hat", {})["is_open"] = bool(is_open > 0.5)
-    
-    return implied
+from engine.params.spec_resolver import resolve_hat_spec_params  # noqa: F401 — re-exported for backward compat
 
 
 def _hat_amp_env(
@@ -203,22 +70,6 @@ def _apply_dirt_wavefold(mix: torch.Tensor, dirt: float, sample_rate: int) -> to
     return mix_out
 
 
-def _apply_dirt_legacy_bitcrush(mix: torch.Tensor, dirt: float, sample_rate: int) -> torch.Tensor:
-    """Legacy bitcrush path (sample-rate reduction)."""
-    if dirt <= 0:
-        return mix
-    target_crush = 48000.0 - (dirt * 36000.0)
-    factor = max(1, int(sample_rate / target_crush))
-    if factor <= 1:
-        return mix
-    mix = mix.clone()
-    for i in range(0, len(mix), factor):
-        val = mix[i]
-        end_idx = min(i + factor, len(mix))
-        mix[i:end_idx] = val
-    return mix
-
-
 class HatEngine:
     def __init__(self, sample_rate: int = 48000):
         self.target_sr = sample_rate
@@ -260,7 +111,7 @@ class HatEngine:
             base_hz = metal_base_hz
         else:
             base_hz = 300.0 + (color * 200.0)
-        ratios = torch.tensor([1.0, 1.5, 1.6, 1.8, 2.2, 3.2])
+        ratios = torch.tensor(HAT_HARMONICS)
         jitter = get_param(params, "hat.metal.ratio_jitter", 0.1)
         try:
             jitter = float(jitter)
@@ -351,24 +202,12 @@ class HatEngine:
             # Legacy mode: color-based HPF
             master = Filter.highpass(master, self.sample_rate, 3000.0 + (color * 1000.0))
 
-        # ---------- Dirt: wavefold/sat by default; optional legacy bitcrush ----------
-        legacy_bitcrush = bool(get_param(params, "hat.dirt.legacy_bitcrush", False))
-        if legacy_bitcrush:
-            master = _apply_dirt_legacy_bitcrush(master, dirt, self.sample_rate)
-            master = master * (1.0 + dirt)
-            master = torch.tanh(master)
-        else:
-            master = _apply_dirt_wavefold(master, dirt, self.sample_rate)
+        # ---------- Dirt: wavefold/saturation ----------
+        master = _apply_dirt_wavefold(master, dirt, self.sample_rate)
 
         # Downsample
         master = Filter.lowpass(master, self.sample_rate, self.target_sr / 2.0 - 1000)
         master = master[:: self.oversample_factor]
-
-        if params.get("legacy_normalize", False):
-            logger.warning("legacy_normalize enabled: this will cancel fader changes")
-            peak = torch.max(torch.abs(master))
-            if peak > 0:
-                master = master / peak * 0.95
 
         master = PostChain.process(master, "hat", self.target_sr, params)
         return master
