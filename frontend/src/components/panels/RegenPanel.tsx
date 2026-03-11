@@ -2,6 +2,7 @@
  * RegenPanel — bottom bar with regenerator controls, mutation settings,
  * macro sliders, ML feedback, and kit management.
  * Phase 3: Roll Dice, Smart Mutate, parameter focus, mutation amount.
+ * Phase 4: Save WAV, Drag WAV handle.
  */
 
 "use client";
@@ -9,6 +10,8 @@
 import React from "react";
 import { usePercussionStore, type MutationFocus } from "@/store/usePercussionStore";
 import { MacroSlider } from "../MacroSlider";
+import { DragWavHandle } from "../DragWavHandle";
+import { useAudioPlayback } from "@/hooks/useAudioPlayback";
 import { getEnvelopeSpec } from "@/audio/params";
 import type { InstrumentType } from "@/types";
 import {
@@ -22,6 +25,7 @@ import {
   Check,
   Dice5,
   Wand2,
+  Save,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -63,7 +67,10 @@ export const RegenPanel: React.FC = () => {
   const smartMutate = usePercussionStore((s) => s.smartMutate);
   const setMutationFocus = usePercussionStore((s) => s.setMutationFocus);
   const setMutationAmount = usePercussionStore((s) => s.setMutationAmount);
+  const saveWav = usePercussionStore((s) => s.saveWav);
+  const audioUrl = usePercussionStore((s) => s.audioUrl);
 
+  const { audioBuffer } = useAudioPlayback(audioUrl);
   const spec = getEnvelopeSpec(instrument);
   const macroParams = spec.macroParams ?? [];
   const inKit = kit[instrument]?.seed === seed;
@@ -179,6 +186,24 @@ export const RegenPanel: React.FC = () => {
             <ThumbsUp size={16} />
           </button>
         </div>
+
+        {/* Save WAV */}
+        <button
+          onClick={saveWav}
+          disabled={isLoading || !audioUrl}
+          className="flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-white font-semibold py-2 px-3 rounded-lg transition-colors"
+          title="Save WAV (high-quality render)"
+        >
+          <Save size={14} />
+          Save
+        </button>
+
+        {/* Drag WAV handle */}
+        <DragWavHandle
+          audioBuffer={audioBuffer}
+          instrument={instrument}
+          seed={seed}
+        />
 
         {/* Add to kit */}
         <button

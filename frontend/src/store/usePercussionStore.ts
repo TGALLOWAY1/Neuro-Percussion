@@ -31,7 +31,7 @@ import {
   type CanonicalPatch,
   type EngineParams,
 } from "@/audio/contract";
-import { generateAudio, sendFeedback, proposeParams, exportKit } from "@/lib/api";
+import { generateAudio, sendFeedback, proposeParams, exportKit, renderHighQuality } from "@/lib/api";
 import type { BezierEnvelope } from "@/audio/bezier";
 import { paramsToEnvelope, envelopeToParams } from "@/audio/bezier";
 
@@ -109,9 +109,10 @@ export interface PercussionActions {
   setMutationFocus: (focus: MutationFocus) => void;
   setMutationAmount: (amount: number) => void;
 
-  // Kit
+  // Kit & Export (Phase 4)
   addToKit: () => void;
   exportCurrentKit: () => Promise<void>;
+  saveWav: () => Promise<void>;
 
   // Layout (Phase 1)
   setActiveLayer: (layer: LayerTab) => void;
@@ -465,6 +466,31 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
       } finally {
         set((s) => {
           s.isExporting = false;
+        });
+      }
+    },
+
+    saveWav: async () => {
+      const { instrument, params, envelopeParams, seed, kit, _getEngineParams } = get();
+      set((s) => {
+        s.isLoading = true;
+      });
+      try {
+        const engineParams = _getEngineParams(instrument, params, envelopeParams, seed, kit[instrument]);
+        const blob = await renderHighQuality(instrument, engineParams, seed);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `neuro_${instrument}_${seed}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("WAV save failed", err);
+      } finally {
+        set((s) => {
+          s.isLoading = false;
         });
       }
     },
