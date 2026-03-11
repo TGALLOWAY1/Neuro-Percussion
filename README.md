@@ -24,7 +24,13 @@ Neural percussion synthesizer with ML-guided sound design. Combines a Python DSP
 ```
 src/
 ├── store/
-│   └── usePercussionStore.ts    # Zustand store (single source of truth)
+│   ├── usePercussionStore.ts    # Zustand store composition root
+│   ├── types.ts                 # Shared state/action type definitions
+│   └── slices/
+│       ├── audioSlice.ts        # Core synth state, generation, WAV export
+│       ├── mutationSlice.ts     # Randomize, mutate, AI suggest, feedback
+│       ├── envelopeSlice.ts     # Bezier sync, envelope mode, layout
+│       └── kitSlice.ts          # Kit management and export
 ├── hooks/
 │   ├── useAudioPlayback.ts      # Web Audio API playback (replaces wavesurfer.js)
 │   ├── useKeyboardShortcuts.ts  # Global keyboard shortcuts
@@ -36,7 +42,13 @@ src/
 │   │   ├── TopNav.tsx           # Instrument tabs + title
 │   │   ├── LayersPanel.tsx      # Layer tabs (SUB/CLICK) + param controls
 │   │   ├── VisualEditorPanel.tsx # Waveform canvas + envelope mode toggle
-│   │   └── RegenPanel.tsx       # Generate/kit/feedback/macros
+│   │   └── RegenPanel.tsx       # Orchestrator for regen/ sub-components
+│   ├── panels/regen/
+│   │   ├── GenerationControls.tsx # Roll, mutate, focus, AI suggest
+│   │   ├── FeedbackControls.tsx   # Thumbs up/down feedback
+│   │   ├── ExportControls.tsx     # Save WAV, drag, kit export
+│   │   ├── MacroGrid.tsx          # Macro parameter grid
+│   │   └── KitStatusBar.tsx       # Kit slot status display
 │   ├── envelopes/               # Envelope controls (spec-driven)
 │   ├── BezierEnvelopeCanvas.tsx # Interactive Bezier editor + waveform
 │   ├── DragWavHandle.tsx        # Drag-to-DAW component
@@ -99,9 +111,9 @@ The central visual editor uses Canvas2D with interactive cubic Bezier curves:
 
 Sound exploration tools with ML-guided feedback:
 
-- **Roll Dice**: Full random — new seed, random envelopes + macros
-- **Smart Mutate**: Jitter around current values with configurable intensity
-- **Focus**: Target mutations to specific envelope groups (AMP, PITCH, CLICK, etc.) or macros only
+- **Randomize All**: Full random — new seed, random envelopes + macros
+- **Mutate Params**: Jitter around current values with configurable intensity
+- **Target**: Target mutations to specific envelope groups (AMP, PITCH, CLICK, etc.) or macros only
 - **Amount**: 5–100% mutation intensity slider
 - **AI Suggest**: ML-guided parameter proposals via RandomForest preference model
 - **Feedback**: Thumbs up/down trains the ML model (history tracked, last 50)
@@ -124,13 +136,23 @@ Sound exploration tools with ML-guided feedback:
 | Key | Action |
 |-----|--------|
 | Space | Replay current sound |
-| Enter / N | Roll Dice (full random) |
-| R | Smart Mutate (constrained jitter) |
+| Enter / N | Randomize All (full random) |
+| R | Mutate Params (constrained jitter) |
 | Arrow Left/Right | Switch instrument |
 | M | AI Suggest (ML-guided mutation) |
 | Ctrl+Z | Undo |
 | Ctrl+Shift+Z | Redo |
 | Ctrl+S | Save WAV |
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [RESEARCH_GUIDANCE](docs/RESEARCH_GUIDANCE.md) | **Canonical source of truth** — parameter schema, gating rules, conventions |
+| [PARAMS](docs/PARAMS.md) | Parameter reference tables (macro, spec, advanced) |
+| [RENDER_PIPELINE](docs/RENDER_PIPELINE.md) | Render tool usage, seed handling, debug outputs |
+| [PARAMETER_CONTRACT](docs/PARAMETER_CONTRACT.md) | Frontend↔backend contract (`CanonicalPatch → EngineParams`) |
+| [ENVELOPES_IMPLEMENTATION](docs/ENVELOPES_IMPLEMENTATION.md) | Bezier envelope system architecture |
 
 ## Development
 
