@@ -32,6 +32,8 @@ import {
   type EngineParams,
 } from "@/audio/contract";
 import { generateAudio, sendFeedback, proposeParams, exportKit } from "@/lib/api";
+import type { BezierEnvelope } from "@/audio/bezier";
+import { paramsToEnvelope, envelopeToParams } from "@/audio/bezier";
 
 export type LayerTab = "SUB" | "CLICK1" | "CLICK2" | "CLICK3";
 export type EnvelopeViewMode = "PITCH" | "AMP";
@@ -66,6 +68,10 @@ export interface PercussionState {
   // Layout state (Phase 1)
   activeLayer: LayerTab;
   envelopeMode: EnvelopeViewMode;
+
+  // Bezier envelope state (Phase 2)
+  bezierEnvelopes: Record<string, BezierEnvelope>; // keyed by envelope id ("amp", "pitch", etc.)
+  timingMs: number; // master TIMING fader (total duration in ms)
 }
 
 export interface PercussionActions {
@@ -99,6 +105,11 @@ export interface PercussionActions {
   setActiveLayer: (layer: LayerTab) => void;
   setEnvelopeMode: (mode: EnvelopeViewMode) => void;
 
+  // Bezier envelope (Phase 2)
+  updateBezierEnvelope: (envelopeId: string, envelope: BezierEnvelope) => void;
+  syncBezierFromParams: () => void;
+  setTimingMs: (ms: number) => void;
+
   // Helpers (internal)
   _getEngineParams: (
     inst: InstrumentType,
@@ -107,6 +118,30 @@ export interface PercussionActions {
     seedVal: number,
     kitPatch?: KitSlot
   ) => EngineParams;
+}
+
+/**
+ * Extract attack/decay/hold/curve param IDs from an envelope spec.
+ * Returns null for envelopes without time-domain params (NONE mode).
+ */
+function _getParamIdsForEnvelope(
+  envSpec: { id: string; mode: string; params: { id: string; unit: string }[] }
+): { attack: string; decay: string; hold?: string; curve?: string } | null {
+  if (envSpec.mode === "NONE") return null;
+
+  const attack = envSpec.params.find((p) => p.id.includes("attack") && p.unit === "ms");
+  const decay = envSpec.params.find((p) => p.id.includes("decay") && p.unit === "ms");
+  if (!attack || !decay) return null;
+
+  const hold = envSpec.params.find((p) => p.id.includes("hold") && p.unit === "ms");
+  const curve = envSpec.params.find((p) => p.id.includes("curve"));
+
+  return {
+    attack: attack.id,
+    decay: decay.id,
+    hold: hold?.id,
+    curve: curve?.id,
+  };
 }
 
 /** Debounce timer for parameter changes (not stored in Zustand) */
@@ -129,6 +164,8 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
     isExporting: false,
     activeLayer: "SUB",
     envelopeMode: "AMP",
+    bezierEnvelopes: {},
+    timingMs: 500,
 
     // --- Helpers ---
     _getEngineParams: (inst, macroParams, envParams, seedVal, kitPatch) => {
@@ -155,6 +192,8 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
         s.feedbackSent = null;
         s.activeLayer = "SUB";
       });
+      // Sync Bezier envelopes from new defaults
+      setTimeout(() => get().syncBezierFromParams(), 0);
       // Auto-generate with defaults
       const { _getEngineParams, seed, kit } = get();
       const engineParams = _getEngineParams(inst, macroDefaults, envDefaults, seed, kit[inst]);
@@ -335,6 +374,64 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
     setEnvelopeMode: (mode) => {
       set((s) => {
         s.envelopeMode = mode;
+      });
+    },
+
+    // --- Bezier Envelope (Phase 2) ---
+    updateBezierEnvelope: (envelopeId, envelope) => {
+      set((s) => {
+        s.bezierEnvelopes[envelopeId] = envelope;
+      });
+
+      // Convert Bezier nodes back to envelope params and update
+      const { instrument, timingMs } = get();
+      const spec = getEnvelopeSpec(instrument);
+      const envSpec = spec.envelopes.find((e) => e.id === envelopeId);
+      if (!envSpec) return;
+
+      const paramIds = _getParamIdsForEnvelope(envSpec);
+      if (!paramIds) return;
+
+      const newParams = envelopeToParams(envelope, envSpec.mode as "AD" | "AHD", timingMs, paramIds);
+
+      // Update envelope params without re-triggering Bezier sync
+      set((s) => {
+        Object.assign(s.envelopeParams, newParams);
+      });
+
+      // Debounced server render
+      if (_previewTimeout) clearTimeout(_previewTimeout);
+      _previewTimeout = setTimeout(() => {
+        const { instrument: inst, params, envelopeParams, seed, kit, _getEngineParams } = get();
+        const engineParams = _getEngineParams(inst, params, envelopeParams, seed, kit[inst]);
+        get().generate({ engineParams });
+      }, 300);
+    },
+
+    syncBezierFromParams: () => {
+      const { instrument, envelopeParams } = get();
+      const spec = getEnvelopeSpec(instrument);
+      const newBezier: Record<string, BezierEnvelope> = {};
+
+      for (const envSpec of spec.envelopes) {
+        if (envSpec.mode === "NONE") continue;
+        const paramIds = _getParamIdsForEnvelope(envSpec);
+        if (!paramIds) continue;
+        newBezier[envSpec.id] = paramsToEnvelope(
+          envSpec.mode as "AD" | "AHD",
+          envelopeParams,
+          paramIds
+        );
+      }
+
+      set((s) => {
+        s.bezierEnvelopes = newBezier;
+      });
+    },
+
+    setTimingMs: (ms) => {
+      set((s) => {
+        s.timingMs = ms;
       });
     },
   }))
