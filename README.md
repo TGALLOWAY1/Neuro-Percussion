@@ -74,7 +74,7 @@ All UI controls are rendered from `ParamSpec` / `EnvelopeSpec`. Adding a new par
 - [x] **Phase 0**: Foundation & Store — Zustand store, Web Audio playback, Canvas2D waveform
 - [x] **Phase 1**: Four-Panel Layout — AppShell, LayersPanel, VisualEditorPanel, RegenPanel, PITCH/AMP toggle, Click layer stubs
 - [x] **Phase 2**: Bezier Envelope Canvas — Interactive Canvas2D editor with cubic Bezier curves, drag nodes/handles, waveform underlay, TIMING fader, params↔envelope bidirectional sync (24 new tests)
-- [ ] **Phase 3**: Regenerator Module
+- [x] **Phase 3**: Regenerator Module — Roll Dice (full random), Smart Mutate (constrained jitter), mutation focus dropdown, amount slider, feedback history
 - [ ] **Phase 4**: Audio Export & Click Layers
 - [ ] **Phase 5**: Client-Side Preview Engine
 - [ ] **Phase 6**: Polish & Performance
@@ -91,12 +91,24 @@ The central visual editor uses Canvas2D with interactive cubic Bezier curves:
 - **TIMING fader** controls the master duration (50–3000ms)
 - Changes auto-sync to envelope params and trigger debounced server render
 
+### Regenerator Module
+
+Sound exploration tools with ML-guided feedback:
+
+- **Roll Dice**: Full random — new seed, random envelopes + macros
+- **Smart Mutate**: Jitter around current values with configurable intensity
+- **Focus**: Target mutations to specific envelope groups (AMP, PITCH, CLICK, etc.) or macros only
+- **Amount**: 5–100% mutation intensity slider
+- **AI Suggest**: ML-guided parameter proposals via RandomForest preference model
+- **Feedback**: Thumbs up/down trains the ML model (history tracked, last 50)
+
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | Space | Replay current sound |
-| Enter / N | Generate new (random seed + envelopes) |
+| Enter / N | Roll Dice (full random) |
+| R | Smart Mutate (constrained jitter) |
 | Arrow Left/Right | Switch instrument |
 | M | AI Suggest (ML-guided mutation) |
 

@@ -83,11 +83,11 @@ All controls rendered from `ParamSpec`/`EnvelopeSpec`. Adding a new parameter is
 - ✅ Render waveform underneath envelope curve
 - ✅ Add TIMING master fader
 
-### Phase 3: Regenerator Module (Week 3-4)
-- "Roll Dice" (high-entropy randomization)
-- "Smart Mutate" (constrained mutation with parameter focus)
-- Parameter focus dropdown
-- Feedback integration (thumbs up/down)
+### Phase 3: Regenerator Module (Week 3-4) ✅
+- ✅ "Roll Dice" (high-entropy randomization — all macros + envelopes + seed)
+- ✅ "Smart Mutate" (constrained jitter with configurable amount)
+- ✅ Parameter focus dropdown (per-envelope group + macros)
+- ✅ Feedback integration (thumbs up/down with history tracking)
 
 ### Phase 4: Audio Export & Click Layers (Week 4-5)
 - "SAVE WAV" high-quality render
