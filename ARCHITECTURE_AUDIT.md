@@ -76,12 +76,12 @@ All controls rendered from `ParamSpec`/`EnvelopeSpec`. Adding a new parameter is
 - Implement PITCH/AMP mode toggle
 - Stub out Click layer tabs
 
-### Phase 2: Bezier Envelope Canvas (Week 2-3) — CRITICAL PATH
-- Build `BezierEnvelopeCanvas` component (Canvas2D)
-- Implement node interaction (drag, add/remove, context menu)
-- Implement Bezier math and curve↔params conversion
-- Render waveform underneath envelope curve
-- Add TIMING master fader
+### Phase 2: Bezier Envelope Canvas (Week 2-3) — CRITICAL PATH ✅
+- ✅ Build `BezierEnvelopeCanvas` component (Canvas2D)
+- ✅ Implement node interaction (drag, add/remove, double-click)
+- ✅ Implement Bezier math and curve↔params conversion (24 tests)
+- ✅ Render waveform underneath envelope curve
+- ✅ Add TIMING master fader
 
 ### Phase 3: Regenerator Module (Week 3-4)
 - "Roll Dice" (high-entropy randomization)

@@ -12,12 +12,12 @@ Neural percussion synthesizer with ML-guided sound design. Combines a Python DSP
 |-------|-----------|
 | Framework | Next.js 16 + React 19 |
 | State | Zustand + immer middleware |
-| Envelope Editor | Canvas2D (Phase 2) |
-| Waveform | Canvas2D with Web Audio API playback |
+| Envelope Editor | Canvas2D Bezier editor with drag interaction |
+| Waveform | Canvas2D with Web Audio API playback (shared canvas) |
 | Audio Render | Python FastAPI + PyTorch (server) |
 | Styling | Tailwind CSS 4 |
 | ML/Regenerator | scikit-learn (server) |
-| Testing | Vitest (90 tests) |
+| Testing | Vitest (114 tests) |
 
 ### Frontend Architecture
 
@@ -37,9 +37,11 @@ src/
 │   │   ├── VisualEditorPanel.tsx # Waveform canvas + envelope mode toggle
 │   │   └── RegenPanel.tsx       # Generate/kit/feedback/macros
 │   ├── envelopes/               # Envelope controls (spec-driven)
-│   ├── WaveformCanvas.tsx       # Canvas2D waveform renderer
+│   ├── BezierEnvelopeCanvas.tsx # Interactive Bezier editor + waveform
+│   ├── WaveformCanvas.tsx       # Canvas2D waveform renderer (standalone)
 │   └── MacroSlider.tsx          # Macro parameter slider
 ├── audio/
+│   ├── bezier/                  # Bezier math, types, params↔envelope conversion
 │   ├── params/                  # Spec-driven parameter system
 │   └── contract/                # Canonical patch → engine param mapping
 └── lib/
@@ -71,11 +73,23 @@ All UI controls are rendered from `ParamSpec` / `EnvelopeSpec`. Adding a new par
 
 - [x] **Phase 0**: Foundation & Store — Zustand store, Web Audio playback, Canvas2D waveform
 - [x] **Phase 1**: Four-Panel Layout — AppShell, LayersPanel, VisualEditorPanel, RegenPanel, PITCH/AMP toggle, Click layer stubs
-- [ ] **Phase 2**: Bezier Envelope Canvas (critical path)
+- [x] **Phase 2**: Bezier Envelope Canvas — Interactive Canvas2D editor with cubic Bezier curves, drag nodes/handles, waveform underlay, TIMING fader, params↔envelope bidirectional sync (24 new tests)
 - [ ] **Phase 3**: Regenerator Module
 - [ ] **Phase 4**: Audio Export & Click Layers
 - [ ] **Phase 5**: Client-Side Preview Engine
 - [ ] **Phase 6**: Polish & Performance
+
+### Bezier Envelope Editor
+
+The central visual editor uses Canvas2D with interactive cubic Bezier curves:
+
+- **Drag nodes** to reshape the envelope (attack peak, hold points, etc.)
+- **Drag control handles** to adjust curve tension and shape
+- **Double-click** on empty space to add a new node
+- **Double-click** on a node to remove it (start/end nodes are locked)
+- **AMP/PITCH toggle** switches between amplitude and pitch envelope views
+- **TIMING fader** controls the master duration (50–3000ms)
+- Changes auto-sync to envelope params and trigger debounced server render
 
 ## Keyboard Shortcuts
 
