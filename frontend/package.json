@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "immer": "^11.1.4",
     "lucide-react": "^0.563.0",
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
-    "wavesurfer.js": "^7.12.1"
+    "wavesurfer.js": "^7.12.1",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
