@@ -58,6 +58,7 @@ export interface PercussionState {
   // Audio output
   audioUrl: string | null;
   isLoading: boolean;
+  error: string | null;
 
   // ML feedback
   feedbackSent: number | null;
@@ -113,6 +114,9 @@ export interface PercussionActions {
   addToKit: () => void;
   exportCurrentKit: () => Promise<void>;
   saveWav: () => Promise<void>;
+
+  // Error handling
+  clearError: () => void;
 
   // Layout (Phase 1)
   setActiveLayer: (layer: LayerTab) => void;
@@ -172,6 +176,7 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
     seed: 42,
     audioUrl: null,
     isLoading: false,
+    error: null,
     feedbackSent: null,
     kit: {},
     isExporting: false,
@@ -283,19 +288,27 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
       set((s) => {
         s.isLoading = true;
         s.feedbackSent = null;
+        s.error = null;
       });
 
       try {
         const blob = await generateAudio(inst, engineParams, seedVal);
         const url = URL.createObjectURL(blob);
+        const oldUrl = get().audioUrl;
         set((s) => {
           s.audioUrl = url;
           if (overrides?.params) s.params = overrides.params;
           if (overrides?.seed !== undefined) s.seed = overrides.seed;
           if (overrides?.envelopeParams) s.envelopeParams = overrides.envelopeParams;
         });
+        // Revoke old blob URL to prevent memory leak
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
       } catch (err) {
-        console.error(err);
+        const message = err instanceof Error ? err.message : "Audio generation failed";
+        console.error(message, err);
+        set((s) => {
+          s.error = message;
+        });
       } finally {
         set((s) => {
           s.isLoading = false;
@@ -324,7 +337,9 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
           }
         });
       } catch (err) {
-        console.error("Feedback failed", err);
+        const message = err instanceof Error ? err.message : "Feedback submission failed";
+        console.error(message, err);
+        set((s) => { s.error = message; });
       }
     },
 
@@ -338,7 +353,9 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
         const newEnvelopeParams = getRandomEnvelopeParams(instrument);
         await get().generate({ params: newParams, envelopeParams: newEnvelopeParams });
       } catch (err) {
-        console.error(err);
+        const message = err instanceof Error ? err.message : "AI suggestion failed";
+        console.error(message, err);
+        set((s) => { s.error = message; });
       } finally {
         set((s) => {
           s.isLoading = false;
@@ -461,8 +478,11 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       } catch (err) {
-        console.error(err);
+        const message = err instanceof Error ? err.message : "Kit export failed";
+        console.error(message, err);
+        set((s) => { s.error = message; });
       } finally {
         set((s) => {
           s.isExporting = false;
@@ -487,7 +507,9 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } catch (err) {
-        console.error("WAV save failed", err);
+        const message = err instanceof Error ? err.message : "WAV save failed";
+        console.error(message, err);
+        set((s) => { s.error = message; });
       } finally {
         set((s) => {
           s.isLoading = false;
@@ -563,6 +585,12 @@ export const usePercussionStore = create<PercussionState & PercussionActions>()(
     setTimingMs: (ms) => {
       set((s) => {
         s.timingMs = ms;
+      });
+    },
+
+    clearError: () => {
+      set((s) => {
+        s.error = null;
       });
     },
   }))

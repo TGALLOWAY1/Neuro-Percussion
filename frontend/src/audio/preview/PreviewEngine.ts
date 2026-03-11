@@ -100,11 +100,11 @@ export function playPreview(params: PreviewParams): void {
     clickGain.gain.setValueAtTime(clickAmount * 0.3, now);
     clickGain.gain.exponentialRampToValueAtTime(0.001, now + clickDecay);
 
-    // White noise burst via buffer source
-    const bufferSize = Math.ceil(ctx.sampleRate * clickDecay * 2);
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    // White noise burst via buffer source (buffer matches clickDecay duration)
+    const bufferSize = Math.ceil(ctx.sampleRate * clickDecay);
+    const noiseBuffer = ctx.createBuffer(1, Math.max(1, bufferSize), ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
+    for (let i = 0; i < noiseBuffer.length; i++) {
       data[i] = Math.random() * 2 - 1;
     }
     const noise = ctx.createBufferSource();
@@ -112,7 +112,11 @@ export function playPreview(params: PreviewParams): void {
     noise.connect(clickGain);
     clickGain.connect(ctx.destination);
     noise.start(now);
-    noise.stop(now + clickDecay * 2);
+    noise.stop(now + clickDecay);
+    noise.onended = () => {
+      noise.disconnect();
+      clickGain.disconnect();
+    };
   }
 
   // ── Start and stop ───────────────────────────────────

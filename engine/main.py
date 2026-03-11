@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Optional, Any, Literal
 import uvicorn
 import logging
 
@@ -21,6 +23,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+VALID_INSTRUMENTS = {"kick", "snare", "hat"}
+
+class FeedbackRequest(BaseModel):
+    instrument: str
+    params: Dict[str, Any]
+    seed: int
+    label: int = Field(ge=0, le=1)
+
+    @field_validator("instrument")
+    @classmethod
+    def validate_instrument(cls, v: str) -> str:
+        if v not in VALID_INSTRUMENTS:
+            raise ValueError(f"Invalid instrument: {v}. Must be one of {VALID_INSTRUMENTS}")
+        return v
+
+class KitExportRequest(BaseModel):
+    name: str = Field(default="NeuroKit Unnamed", max_length=128)
+    slots: Dict[str, Any] = Field(default_factory=dict)
 
 @app.get("/health")
 async def health_check():
@@ -154,7 +175,7 @@ from engine.ml.sampler import Sampler
 # One dataset/model per instrument or shared? PRD says "per-instrument preference models".
 # We'll use a dictionary.
 datasets = {
-    'kick': DatasetStore('data/dateset_kick.jsonl'),
+    'kick': DatasetStore('data/dataset_kick.jsonl'),
     'snare': DatasetStore('data/dataset_snare.jsonl'),
     'hat': DatasetStore('data/dataset_hat.jsonl')
 }
@@ -170,7 +191,7 @@ for inst in models.keys():
     data = datasets[inst].load(inst)
     if data:
         models[inst].train(data)
-        print(f"[{inst}] Model trained on {len(data)} examples.")
+        logger.info(f"[{inst}] Model trained on {len(data)} examples.")
 
 samplers = {
     'kick': Sampler(models['kick']),
@@ -212,36 +233,27 @@ PARAM_SPACES = {
 }
 
 @app.post("/feedback")
-async def feedback(data: dict):
+async def feedback(data: FeedbackRequest):
     """
     Receives feedback: { instrument, params, seed, label: 0/1 }
+    Pydantic validates instrument name and label range (0 or 1).
     """
-    inst = data.get('instrument')
-    if inst not in datasets:
-        return {"status": "error", "message": "Invalid instrument"}
-        
-    # Save
-    # We should extract features first?
-    # Ideally yes, but for now we just save params/label for V1 model training. 
-    # The FeatureExtractor is redundant for this simple model unless we change Model to use Audio Features.
-    # PRD 6.1 says "features": { "centroid": 1200... } in JSON schema.
-    # So we should render (which is expensive) or just store 0s for now?
-    # Let's simple-store for now to avoid re-rendering.
-    
-    datasets[inst].add(inst, data['params'], {}, data['label'], data['seed'])
-    
+    inst = data.instrument
+
+    datasets[inst].add(inst, data.params, {}, data.label, data.seed)
+
     # Retrain (simple online update simulation)
     # In production handled by background task.
     all_data = datasets[inst].load(inst)
     models[inst].train(all_data)
-    
+
     return {"status": "ok", "samples": len(all_data)}
 
 @app.get("/propose/{instrument}")
 async def propose(instrument: str):
     if instrument not in samplers:
-        return {"status": "error"}
-    
+        raise HTTPException(status_code=404, detail=f"Unknown instrument: {instrument}")
+
     params = samplers[instrument].propose(PARAM_SPACES[instrument])
     return params
 
@@ -257,8 +269,8 @@ async def get_schema(instrument: str):
     Includes macro params, macros (Kick2-style), layer gains, ADSR, and advanced params.
     """
     if instrument not in PARAM_SCHEMA:
-        return {"status": "error", "message": f"Invalid instrument: {instrument}"}
-    
+        raise HTTPException(status_code=404, detail=f"Invalid instrument: {instrument}")
+
     return {
         "instrument": instrument,
         "schema": PARAM_SCHEMA[instrument]
@@ -271,7 +283,7 @@ async def get_defaults(instrument: str):
     Single source: ENGINE_DEFAULTS (canonical_defaults) + apply_macros, same as resolve_params(inst, {}).
     """
     if instrument not in ENGINE_DEFAULTS:
-        return {"status": "error", "message": f"Invalid instrument: {instrument}"}
+        raise HTTPException(status_code=404, detail=f"Invalid instrument: {instrument}")
     defaults = resolve_params(instrument, {})
     return {
         "instrument": instrument,
@@ -279,13 +291,13 @@ async def get_defaults(instrument: str):
     }
 
 @app.post("/export/kit")
-async def export_kit(kit_data: dict):
+async def export_kit(kit_data: KitExportRequest):
     """
     Generates a ZIP file for the kit.
     """
-    zip_bytes = Exporter.create_kit_zip(kit_data)
+    zip_bytes = Exporter.create_kit_zip(kit_data.model_dump())
     return Response(
-        content=zip_bytes, 
+        content=zip_bytes,
         media_type="application/zip",
         headers={"Content-Disposition": "attachment; filename=neuro_kit.zip"}
     )

@@ -74,7 +74,7 @@ export const LayersPanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Layer tabs */}
-      <div className="flex border-b border-neutral-800">
+      <div className="flex border-b border-neutral-800" role="tablist" aria-label="Sound layers">
         {LAYERS.map((layer) => {
           const isClick = layer.id.startsWith("CLICK");
           const clickState = clickLayers[layer.id];
@@ -83,6 +83,9 @@ export const LayersPanel: React.FC = () => {
           return (
             <button
               key={layer.id}
+              role="tab"
+              aria-selected={activeLayer === layer.id}
+              aria-controls={`layer-panel-${layer.id}`}
               onClick={() => setActiveLayer(layer.id)}
               className={clsx(
                 "flex-1 px-2 py-3 text-xs font-semibold uppercase tracking-wider transition-all text-center",
@@ -103,7 +106,12 @@ export const LayersPanel: React.FC = () => {
       </div>
 
       {/* Layer content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        id={`layer-panel-${activeLayer}`}
+        role="tabpanel"
+        aria-label={`${activeLayer} layer parameters`}
+        className="flex-1 overflow-y-auto p-4"
+      >
         {activeLayer === "SUB" ? (
           <EnvelopeStrip
             spec={spec}
@@ -120,6 +128,8 @@ export const LayersPanel: React.FC = () => {
               </span>
               <button
                 onClick={() => updateClickLayer(activeLayer, { enabled: !currentClick.enabled })}
+                aria-pressed={currentClick.enabled}
+                aria-label={`${activeLayer.replace("CLICK", "Click ")} ${currentClick.enabled ? "enabled" : "disabled"}`}
                 className={clsx(
                   "p-1.5 rounded transition-colors",
                   currentClick.enabled
@@ -133,10 +143,11 @@ export const LayersPanel: React.FC = () => {
 
             {/* Sample selector */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-neutral-500 font-mono uppercase">
+              <label htmlFor={`sample-${activeLayer}`} className="text-[10px] text-neutral-500 font-mono uppercase">
                 Transient Sample
               </label>
               <select
+                id={`sample-${activeLayer}`}
                 value={currentClick.sample}
                 onChange={(e) =>
                   updateClickLayer(activeLayer, {
@@ -157,14 +168,15 @@ export const LayersPanel: React.FC = () => {
             {/* Gain slider */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between">
-                <label className="text-[10px] text-neutral-500 font-mono uppercase">
+                <label htmlFor={`gain-${activeLayer}`} className="text-[10px] text-neutral-500 font-mono uppercase">
                   Level
                 </label>
-                <span className="text-[10px] text-emerald-400 font-mono">
+                <span className="text-[10px] text-emerald-400 font-mono" aria-hidden="true">
                   {Math.round(currentClick.gain * 100)}%
                 </span>
               </div>
               <input
+                id={`gain-${activeLayer}`}
                 type="range"
                 min={0}
                 max={1}
@@ -173,6 +185,7 @@ export const LayersPanel: React.FC = () => {
                 onChange={(e) =>
                   updateClickLayer(activeLayer, { gain: Number(e.target.value) })
                 }
+                aria-label={`${activeLayer.replace("CLICK", "Click ")} level: ${Math.round(currentClick.gain * 100)}%`}
                 className="w-full h-1 accent-emerald-500"
                 disabled={!currentClick.enabled}
               />
