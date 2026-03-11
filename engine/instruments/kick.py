@@ -455,11 +455,5 @@ class KickEngine:
         master = Filter.lowpass(master, self.sample_rate, self.target_sr / 2.0 - 1000)
         master = master[:: self.oversample_factor]
 
-        if params.get("legacy_normalize", False):
-            logger.warning("legacy_normalize enabled: this will cancel fader changes")
-            peak = torch.max(torch.abs(master))
-            if peak > 0:
-                master = master / peak * 0.95
-
         master = PostChain.process(master, "kick", self.target_sr, params)
         return master

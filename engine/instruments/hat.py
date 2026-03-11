@@ -203,22 +203,6 @@ def _apply_dirt_wavefold(mix: torch.Tensor, dirt: float, sample_rate: int) -> to
     return mix_out
 
 
-def _apply_dirt_legacy_bitcrush(mix: torch.Tensor, dirt: float, sample_rate: int) -> torch.Tensor:
-    """Legacy bitcrush path (sample-rate reduction)."""
-    if dirt <= 0:
-        return mix
-    target_crush = 48000.0 - (dirt * 36000.0)
-    factor = max(1, int(sample_rate / target_crush))
-    if factor <= 1:
-        return mix
-    mix = mix.clone()
-    for i in range(0, len(mix), factor):
-        val = mix[i]
-        end_idx = min(i + factor, len(mix))
-        mix[i:end_idx] = val
-    return mix
-
-
 class HatEngine:
     def __init__(self, sample_rate: int = 48000):
         self.target_sr = sample_rate
@@ -351,24 +335,12 @@ class HatEngine:
             # Legacy mode: color-based HPF
             master = Filter.highpass(master, self.sample_rate, 3000.0 + (color * 1000.0))
 
-        # ---------- Dirt: wavefold/sat by default; optional legacy bitcrush ----------
-        legacy_bitcrush = bool(get_param(params, "hat.dirt.legacy_bitcrush", False))
-        if legacy_bitcrush:
-            master = _apply_dirt_legacy_bitcrush(master, dirt, self.sample_rate)
-            master = master * (1.0 + dirt)
-            master = torch.tanh(master)
-        else:
-            master = _apply_dirt_wavefold(master, dirt, self.sample_rate)
+        # ---------- Dirt: wavefold/saturation ----------
+        master = _apply_dirt_wavefold(master, dirt, self.sample_rate)
 
         # Downsample
         master = Filter.lowpass(master, self.sample_rate, self.target_sr / 2.0 - 1000)
         master = master[:: self.oversample_factor]
-
-        if params.get("legacy_normalize", False):
-            logger.warning("legacy_normalize enabled: this will cancel fader changes")
-            peak = torch.max(torch.abs(master))
-            if peak > 0:
-                master = master / peak * 0.95
 
         master = PostChain.process(master, "hat", self.target_sr, params)
         return master

@@ -522,11 +522,5 @@ class SnareEngine:
         master = Filter.highpass(master, self.sample_rate, 80.0)
         master = master[:: self.oversample_factor]
 
-        if params.get("legacy_normalize", False):
-            logger.warning("legacy_normalize enabled: this will cancel fader changes")
-            peak = torch.max(torch.abs(master))
-            if peak > 0:
-                master = master / peak * 0.95
-
         master = PostChain.process(master, "snare", self.target_sr, params)
         return master

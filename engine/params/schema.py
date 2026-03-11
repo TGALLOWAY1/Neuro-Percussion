@@ -348,10 +348,6 @@ PARAM_SCHEMA: Dict[str, Dict[str, ParamSchemaEntry]] = {
         "hat.metal.ratio_jitter": _make_param(
             "float", 0.1, 0.0, 0.5, "advanced", "Metal layer harmonic ratio jitter"
         ),
-        # Advanced: legacy bitcrush
-        "hat.dirt.legacy_bitcrush": _make_param(
-            "bool", False, False, True, "advanced", "Use legacy bitcrush instead of wavefold/sat"
-        ),
         # Per-layer gain_db
         "hat.metal.gain_db": _make_param(
             "float", 0.0, -60.0, 12.0, "layer_gain", "Metal layer gain (dB)"
