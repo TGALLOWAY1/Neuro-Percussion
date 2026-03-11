@@ -89,11 +89,11 @@ All controls rendered from `ParamSpec`/`EnvelopeSpec`. Adding a new parameter is
 - ✅ Parameter focus dropdown (per-envelope group + macros)
 - ✅ Feedback integration (thumbs up/down with history tracking)
 
-### Phase 4: Audio Export & Click Layers (Week 4-5)
-- "SAVE WAV" high-quality render
-- "Drag WAV" handle for DAW integration
-- Click layer system (built-in transient sample library)
-- Kit export polish
+### Phase 4: Audio Export & Click Layers (Week 4-5) ✅
+- ✅ "SAVE WAV" high-quality render (server-side, download trigger)
+- ✅ "Drag WAV" handle for DAW integration (client-side 16-bit PCM encoding)
+- ✅ Click layer system (9 built-in transient samples, per-layer gain/enable)
+- ✅ Kit export (existing functionality preserved)
 
 ### Phase 5: Client-Side Preview Engine (Week 5-6)
 - Build `PreviewEngine` using Web Audio API

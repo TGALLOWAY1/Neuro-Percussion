@@ -75,7 +75,7 @@ All UI controls are rendered from `ParamSpec` / `EnvelopeSpec`. Adding a new par
 - [x] **Phase 1**: Four-Panel Layout — AppShell, LayersPanel, VisualEditorPanel, RegenPanel, PITCH/AMP toggle, Click layer stubs
 - [x] **Phase 2**: Bezier Envelope Canvas — Interactive Canvas2D editor with cubic Bezier curves, drag nodes/handles, waveform underlay, TIMING fader, params↔envelope bidirectional sync (24 new tests)
 - [x] **Phase 3**: Regenerator Module — Roll Dice (full random), Smart Mutate (constrained jitter), mutation focus dropdown, amount slider, feedback history
-- [ ] **Phase 4**: Audio Export & Click Layers
+- [x] **Phase 4**: Audio Export & Click Layers — Save WAV, Drag-to-DAW, WAV encoder, 3 Click layer tabs with sample selector
 - [ ] **Phase 5**: Client-Side Preview Engine
 - [ ] **Phase 6**: Polish & Performance
 
@@ -101,6 +101,19 @@ Sound exploration tools with ML-guided feedback:
 - **Amount**: 5–100% mutation intensity slider
 - **AI Suggest**: ML-guided parameter proposals via RandomForest preference model
 - **Feedback**: Thumbs up/down trains the ML model (history tracked, last 50)
+
+### Audio Export
+
+- **Save WAV**: Server-side high-quality render, downloads as `neuro_{instrument}_{seed}.wav`
+- **Drag WAV**: Drag the handle to your DAW — client-side 16-bit PCM encoding
+- **Export Kit**: Bundle all kit slots into a ZIP archive
+
+### Click Layers
+
+3 click layer tabs (CLICK 1–3) with:
+- **Sample selector**: 9 built-in transient samples (stick attack, rim snap, etc.)
+- **Level slider**: per-layer gain control
+- **Enable toggle**: mute/unmute individual layers
 
 ## Keyboard Shortcuts
 
