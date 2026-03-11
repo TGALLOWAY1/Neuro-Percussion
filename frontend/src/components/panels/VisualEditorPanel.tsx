@@ -70,10 +70,12 @@ export const VisualEditorPanel: React.FC = () => {
     <div className="flex flex-col h-full gap-3">
       {/* Top bar: mode toggle + TIMING fader + preview toggle */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex bg-neutral-900 rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-neutral-900 rounded-lg p-0.5 gap-0.5" role="radiogroup" aria-label="Envelope mode">
           {MODES.map((mode) => (
             <button
               key={mode}
+              role="radio"
+              aria-checked={envelopeMode === mode}
               onClick={() => setEnvelopeMode(mode)}
               className={clsx(
                 "px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wider transition-all",
@@ -89,10 +91,14 @@ export const VisualEditorPanel: React.FC = () => {
 
         {/* TIMING master fader */}
         <div className="flex items-center gap-2 flex-1 max-w-xs">
-          <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider whitespace-nowrap">
+          <label
+            htmlFor="timing-fader"
+            className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider whitespace-nowrap"
+          >
             Timing
-          </span>
+          </label>
           <input
+            id="timing-fader"
             type="range"
             min={50}
             max={3000}
@@ -100,8 +106,9 @@ export const VisualEditorPanel: React.FC = () => {
             value={timingMs}
             onChange={(e) => setTimingMs(Number(e.target.value))}
             className="flex-1 h-1 accent-emerald-500"
+            aria-label={`Timing: ${timingMs} milliseconds`}
           />
-          <span className="text-[10px] text-emerald-400 font-mono w-14 text-right">
+          <span className="text-[10px] text-emerald-400 font-mono w-14 text-right" aria-hidden="true">
             {timingMs} ms
           </span>
         </div>
@@ -116,6 +123,8 @@ export const VisualEditorPanel: React.FC = () => {
               : "text-neutral-600 bg-neutral-900 border border-neutral-800"
           )}
           title={previewEnabled ? "Preview on (click to disable)" : "Preview off (click to enable)"}
+          aria-pressed={previewEnabled}
+          aria-label={`Audio preview ${previewEnabled ? "enabled" : "disabled"}`}
         >
           <Volume2 size={10} />
           Preview
