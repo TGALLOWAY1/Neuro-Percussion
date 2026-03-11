@@ -1,10 +1,11 @@
-import { InstrumentType, Candidate } from "@/types";
+import type { InstrumentType } from "@/types";
+import type { EngineParams } from "@/audio/contract";
 
 const API_BASE = "http://localhost:8000";
 
 export async function generateAudio(
     instrument: InstrumentType,
-    params: Record<string, any>, // Allow nested objects
+    params: EngineParams,
     seed: number
 ): Promise<Blob> {
     const response = await fetch(`${API_BASE}/generate/${instrument}`, {
@@ -19,7 +20,7 @@ export async function generateAudio(
     });
 
     if (!response.ok) {
-        throw new Error(`Generation failed: ${response.statusText}`);
+        throw new Error(`Generation failed (${response.status}): ${response.statusText}`);
     }
 
     return response.blob();
@@ -29,28 +30,37 @@ export async function sendFeedback(
     instrument: InstrumentType,
     params: Record<string, number>,
     seed: number,
-    label: number // 1 or 0
-) {
-    await fetch(`${API_BASE}/feedback`, {
+    label: 0 | 1
+): Promise<void> {
+    const response = await fetch(`${API_BASE}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instrument, params, seed, label })
     });
+
+    if (!response.ok) {
+        throw new Error(`Feedback failed (${response.status}): ${response.statusText}`);
+    }
 }
 
 export async function proposeParams(instrument: InstrumentType): Promise<Record<string, number>> {
     const res = await fetch(`${API_BASE}/propose/${instrument}`);
-    if (!res.ok) throw new Error("Propose failed");
+    if (!res.ok) throw new Error(`Propose failed (${res.status}): ${res.statusText}`);
     return res.json();
 }
 
-export async function exportKit(kitData: any): Promise<Blob> {
+export interface KitExportData {
+    name: string;
+    slots: Record<string, unknown>;
+}
+
+export async function exportKit(kitData: KitExportData): Promise<Blob> {
     const res = await fetch(`${API_BASE}/export/kit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(kitData)
     });
-    if (!res.ok) throw new Error("Export failed");
+    if (!res.ok) throw new Error(`Export failed (${res.status}): ${res.statusText}`);
     return res.blob();
 }
 
@@ -60,7 +70,7 @@ export async function exportKit(kitData: any): Promise<Blob> {
  */
 export async function renderHighQuality(
     instrument: InstrumentType,
-    params: Record<string, any>,
+    params: EngineParams,
     seed: number
 ): Promise<Blob> {
     const response = await fetch(`${API_BASE}/generate/${instrument}`, {
@@ -73,7 +83,7 @@ export async function renderHighQuality(
         }),
     });
     if (!response.ok) {
-        throw new Error(`High-quality render failed: ${response.statusText}`);
+        throw new Error(`High-quality render failed (${response.status}): ${response.statusText}`);
     }
     return response.blob();
 }

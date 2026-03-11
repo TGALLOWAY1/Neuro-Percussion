@@ -519,21 +519,85 @@ export const BezierEnvelopeCanvas: React.FC<BezierEnvelopeCanvasProps> = ({
     [fromCanvas, onEnvelopeChange]
   );
 
+  // ── Keyboard handlers for canvas accessibility ─────────
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+      const env = envelopeRef.current;
+      if (env.nodes.length === 0) return;
+
+      // Use a selected node index (default to 0 if none selected)
+      const selectedIdx =
+        dragTarget?.type === "node" ? dragTarget.index :
+        hoveredTarget?.type === "node" ? hoveredTarget.index : 0;
+      const node = env.nodes[selectedIdx];
+      if (!node) return;
+
+      const step = e.shiftKey ? 0.05 : 0.01;
+      let handled = false;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+        const newEnv = structuredClone(env);
+        const n = newEnv.nodes[selectedIdx];
+
+        if (e.key === "ArrowLeft" && !n.locked) {
+          n.position.x = Math.max(0, n.position.x - step);
+          handled = true;
+        } else if (e.key === "ArrowRight" && !n.locked) {
+          n.position.x = Math.min(1, n.position.x + step);
+          handled = true;
+        } else if (e.key === "ArrowUp") {
+          n.position.y = Math.min(1, n.position.y + step);
+          handled = true;
+        } else if (e.key === "ArrowDown") {
+          n.position.y = Math.max(0, n.position.y - step);
+          handled = true;
+        }
+
+        if (handled) {
+          onEnvelopeChange(newEnv);
+          setHoveredTarget({ type: "node", index: selectedIdx });
+          e.preventDefault();
+        }
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedIdx > 0 && selectedIdx < env.nodes.length - 1) {
+          const newEnv = structuredClone(env);
+          newEnv.nodes.splice(selectedIdx, 1);
+          onEnvelopeChange(newEnv);
+          setHoveredTarget(null);
+          e.preventDefault();
+        }
+      } else if (e.key === "Tab") {
+        // Cycle through nodes
+        const nextIdx = e.shiftKey
+          ? (selectedIdx - 1 + env.nodes.length) % env.nodes.length
+          : (selectedIdx + 1) % env.nodes.length;
+        setHoveredTarget({ type: "node", index: nextIdx });
+        e.preventDefault();
+      }
+    },
+    [dragTarget, hoveredTarget, onEnvelopeChange]
+  );
+
   return (
     <div
       ref={containerRef}
       className="w-full rounded-lg border border-neutral-800 overflow-hidden relative"
+      role="application"
+      aria-label={`${mode} envelope editor — ${envelope.nodes.length} nodes. Use Tab to select nodes, Arrow keys to move, Delete to remove.`}
       style={{ height }}
     >
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        className="w-full h-full focus:outline-2 focus:outline-emerald-500 focus:outline-offset-[-2px]"
         style={{ display: "block" }}
+        tabIndex={0}
+        aria-label={`${mode} envelope canvas with ${envelope.nodes.length} control points`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
       />
       {/* Mode label */}
       <div className="absolute top-2 right-2 text-[10px] text-neutral-600 font-mono pointer-events-none">
