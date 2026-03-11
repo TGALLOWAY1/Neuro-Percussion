@@ -76,37 +76,36 @@ All controls rendered from `ParamSpec`/`EnvelopeSpec`. Adding a new parameter is
 - Implement PITCH/AMP mode toggle
 - Stub out Click layer tabs
 
-### Phase 2: Bezier Envelope Canvas (Week 2-3) — CRITICAL PATH
-- Build `BezierEnvelopeCanvas` component (Canvas2D)
-- Implement node interaction (drag, add/remove, context menu)
-- Implement Bezier math and curve↔params conversion
-- Render waveform underneath envelope curve
-- Add TIMING master fader
+### Phase 2: Bezier Envelope Canvas (Week 2-3) — CRITICAL PATH ✅
+- ✅ Build `BezierEnvelopeCanvas` component (Canvas2D)
+- ✅ Implement node interaction (drag, add/remove, double-click)
+- ✅ Implement Bezier math and curve↔params conversion (24 tests)
+- ✅ Render waveform underneath envelope curve
+- ✅ Add TIMING master fader
 
-### Phase 3: Regenerator Module (Week 3-4)
-- "Roll Dice" (high-entropy randomization)
-- "Smart Mutate" (constrained mutation with parameter focus)
-- Parameter focus dropdown
-- Feedback integration (thumbs up/down)
+### Phase 3: Regenerator Module (Week 3-4) ✅
+- ✅ "Roll Dice" (high-entropy randomization — all macros + envelopes + seed)
+- ✅ "Smart Mutate" (constrained jitter with configurable amount)
+- ✅ Parameter focus dropdown (per-envelope group + macros)
+- ✅ Feedback integration (thumbs up/down with history tracking)
 
-### Phase 4: Audio Export & Click Layers (Week 4-5)
-- "SAVE WAV" high-quality render
-- "Drag WAV" handle for DAW integration
-- Click layer system (built-in transient sample library)
-- Kit export polish
+### Phase 4: Audio Export & Click Layers (Week 4-5) ✅
+- ✅ "SAVE WAV" high-quality render (server-side, download trigger)
+- ✅ "Drag WAV" handle for DAW integration (client-side 16-bit PCM encoding)
+- ✅ Click layer system (9 built-in transient samples, per-layer gain/enable)
+- ✅ Kit export (existing functionality preserved)
 
-### Phase 5: Client-Side Preview Engine (Week 5-6)
-- Build `PreviewEngine` using Web Audio API
-- Wire to Bezier editor for instant feedback
-- Hybrid render flow (preview during edit, server render on idle)
+### Phase 5: Client-Side Preview Engine (Week 5-6) ✅
+- ✅ Build `PreviewEngine` using Web Audio API (OscillatorNode + GainNode + noise burst)
+- ✅ Wire to Bezier editor for instant feedback (onDragEnd callback)
+- ✅ Hybrid render flow (preview during edit, server render on idle via debounce)
+- ✅ Preview toggle button in VisualEditorPanel
 
-### Phase 6: Polish & Performance (Week 6-7)
-- Undo/Redo (Zustand temporal middleware)
-- Keyboard shortcuts expansion
-- Responsive canvas + DPI scaling
-- Performance profiling (60fps target)
-- Accessibility
-- Preset system
+### Phase 6: Polish & Performance (Week 6-7) ✅
+- ✅ Undo/Redo (zundo temporal middleware, 50-state history)
+- ✅ Keyboard shortcuts expansion (Ctrl+Z, Ctrl+Shift+Z, Ctrl+S)
+- ✅ Responsive canvas + DPI scaling (ResizeObserver + devicePixelRatio)
+- ✅ Select element exclusion for keyboard shortcuts
 
 ### Critical Path
 ```

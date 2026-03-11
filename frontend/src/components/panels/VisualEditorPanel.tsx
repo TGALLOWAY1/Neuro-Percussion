@@ -1,17 +1,19 @@
 /**
- * VisualEditorPanel — central area with waveform canvas and envelope mode toggle.
- * Phase 1: Waveform canvas with PITCH/AMP mode toggle (visual only).
- * Phase 2: Will add Bezier envelope overlay.
+ * VisualEditorPanel — central area with Bezier envelope editor overlaid on waveform.
+ * Phase 2: Interactive Bezier envelope canvas.
+ * Phase 5: Client-side preview engine for instant feedback on drag end.
  */
 
 "use client";
 
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { usePercussionStore, type EnvelopeViewMode } from "@/store/usePercussionStore";
-import { WaveformCanvas } from "../WaveformCanvas";
+import { BezierEnvelopeCanvas } from "../BezierEnvelopeCanvas";
 import { useAudioPlayback } from "@/hooks/useAudioPlayback";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Volume2 } from "lucide-react";
 import clsx from "clsx";
+import type { BezierEnvelope } from "@/audio/bezier";
+import { playPreview, getInstrumentFrequency, getInstrumentWaveform } from "@/audio/preview";
 
 const MODES: EnvelopeViewMode[] = ["AMP", "PITCH"];
 
@@ -20,13 +22,54 @@ export const VisualEditorPanel: React.FC = () => {
   const isLoading = usePercussionStore((s) => s.isLoading);
   const envelopeMode = usePercussionStore((s) => s.envelopeMode);
   const setEnvelopeMode = usePercussionStore((s) => s.setEnvelopeMode);
+  const bezierEnvelopes = usePercussionStore((s) => s.bezierEnvelopes);
+  const updateBezierEnvelope = usePercussionStore((s) => s.updateBezierEnvelope);
+  const syncBezierFromParams = usePercussionStore((s) => s.syncBezierFromParams);
+  const timingMs = usePercussionStore((s) => s.timingMs);
+  const setTimingMs = usePercussionStore((s) => s.setTimingMs);
+  const instrument = usePercussionStore((s) => s.instrument);
+  const [previewEnabled, setPreviewEnabled] = React.useState(true);
 
   const { audioBuffer } = useAudioPlayback(audioUrl);
 
+  // Sync Bezier envelopes from params on mount
+  useEffect(() => {
+    if (Object.keys(bezierEnvelopes).length === 0) {
+      syncBezierFromParams();
+    }
+  }, []);
+
+  // Get the envelope for the current mode
+  const envelopeId = envelopeMode.toLowerCase();
+  const currentEnvelope = bezierEnvelopes[envelopeId];
+
+  const handleEnvelopeChange = (newEnvelope: BezierEnvelope) => {
+    updateBezierEnvelope(envelopeId, newEnvelope);
+  };
+
+  // Play preview sound when drag ends
+  const handleDragEnd = useCallback(() => {
+    if (!previewEnabled) return;
+
+    const store = usePercussionStore.getState();
+    const ampEnv = store.bezierEnvelopes["amp"];
+    const pitchEnv = store.bezierEnvelopes["pitch"];
+
+    playPreview({
+      frequency: getInstrumentFrequency(store.instrument),
+      ampEnvelope: ampEnv,
+      pitchEnvelope: pitchEnv,
+      duration: store.timingMs / 1000,
+      waveform: getInstrumentWaveform(store.instrument),
+      clickAmount: (store.envelopeParams["click_amount_pct"] ?? 0) / 100,
+      clickDecay: (store.envelopeParams["click_decay_ms"] ?? 12) / 1000,
+    });
+  }, [previewEnabled]);
+
   return (
     <div className="flex flex-col h-full gap-3">
-      {/* Mode toggle */}
-      <div className="flex items-center justify-between">
+      {/* Top bar: mode toggle + TIMING fader + preview toggle */}
+      <div className="flex items-center justify-between gap-4">
         <div className="flex bg-neutral-900 rounded-lg p-0.5 gap-0.5">
           {MODES.map((mode) => (
             <button
@@ -43,17 +86,67 @@ export const VisualEditorPanel: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* TIMING master fader */}
+        <div className="flex items-center gap-2 flex-1 max-w-xs">
+          <span className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider whitespace-nowrap">
+            Timing
+          </span>
+          <input
+            type="range"
+            min={50}
+            max={3000}
+            step={10}
+            value={timingMs}
+            onChange={(e) => setTimingMs(Number(e.target.value))}
+            className="flex-1 h-1 accent-emerald-500"
+          />
+          <span className="text-[10px] text-emerald-400 font-mono w-14 text-right">
+            {timingMs} ms
+          </span>
+        </div>
+
+        {/* Preview toggle */}
+        <button
+          onClick={() => setPreviewEnabled(!previewEnabled)}
+          className={clsx(
+            "flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono uppercase transition-colors",
+            previewEnabled
+              ? "text-emerald-400 bg-emerald-950 border border-emerald-800"
+              : "text-neutral-600 bg-neutral-900 border border-neutral-800"
+          )}
+          title={previewEnabled ? "Preview on (click to disable)" : "Preview off (click to enable)"}
+        >
+          <Volume2 size={10} />
+          Preview
+        </button>
+
         <span className="text-xs text-neutral-600 font-mono">
           {envelopeMode === "AMP" ? "Amplitude Envelope" : "Pitch Envelope"}
         </span>
       </div>
 
-      {/* Waveform + envelope canvas */}
+      {/* Bezier envelope + waveform canvas */}
       <div className="flex-1 relative min-h-0">
-        <WaveformCanvas
-          audioBuffer={audioBuffer}
-          height={256}
-        />
+        {currentEnvelope ? (
+          <BezierEnvelopeCanvas
+            audioBuffer={audioBuffer}
+            envelope={currentEnvelope}
+            onEnvelopeChange={handleEnvelopeChange}
+            onDragEnd={handleDragEnd}
+            height={256}
+            mode={envelopeMode}
+          />
+        ) : (
+          <div
+            className="w-full rounded-lg border border-neutral-800 bg-neutral-900 flex items-center justify-center"
+            style={{ height: 256 }}
+          >
+            <span className="text-xs text-neutral-600 font-mono">
+              No {envelopeMode.toLowerCase()} envelope for this instrument
+            </span>
+          </div>
+        )}
 
         {/* Loading overlay */}
         {isLoading && (
@@ -61,11 +154,6 @@ export const VisualEditorPanel: React.FC = () => {
             <RefreshCw className="animate-spin text-emerald-500" size={24} />
           </div>
         )}
-
-        {/* Phase 2 placeholder for Bezier envelope overlay */}
-        <div className="absolute top-2 right-2 text-[10px] text-neutral-700 font-mono">
-          {envelopeMode} view
-        </div>
       </div>
     </div>
   );

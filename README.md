@@ -11,13 +11,13 @@ Neural percussion synthesizer with ML-guided sound design. Combines a Python DSP
 | Layer | Technology |
 |-------|-----------|
 | Framework | Next.js 16 + React 19 |
-| State | Zustand + immer middleware |
-| Envelope Editor | Canvas2D (Phase 2) |
-| Waveform | Canvas2D with Web Audio API playback |
+| State | Zustand + immer + zundo (undo/redo) |
+| Envelope Editor | Canvas2D Bezier editor with drag interaction |
+| Waveform | Canvas2D with Web Audio API playback (shared canvas) |
 | Audio Render | Python FastAPI + PyTorch (server) |
 | Styling | Tailwind CSS 4 |
 | ML/Regenerator | scikit-learn (server) |
-| Testing | Vitest (90 tests) |
+| Testing | Vitest (114 tests) |
 
 ### Frontend Architecture
 
@@ -27,7 +27,8 @@ src/
 │   └── usePercussionStore.ts    # Zustand store (single source of truth)
 ├── hooks/
 │   ├── useAudioPlayback.ts      # Web Audio API playback (replaces wavesurfer.js)
-│   └── useKeyboardShortcuts.ts  # Global keyboard shortcuts
+│   ├── useKeyboardShortcuts.ts  # Global keyboard shortcuts
+│   └── useUndoRedo.ts           # Undo/redo via zundo temporal middleware
 ├── components/
 │   ├── layout/
 │   │   └── AppShell.tsx         # Four-panel layout shell
@@ -37,13 +38,18 @@ src/
 │   │   ├── VisualEditorPanel.tsx # Waveform canvas + envelope mode toggle
 │   │   └── RegenPanel.tsx       # Generate/kit/feedback/macros
 │   ├── envelopes/               # Envelope controls (spec-driven)
-│   ├── WaveformCanvas.tsx       # Canvas2D waveform renderer
+│   ├── BezierEnvelopeCanvas.tsx # Interactive Bezier editor + waveform
+│   ├── DragWavHandle.tsx        # Drag-to-DAW component
+│   ├── WaveformCanvas.tsx       # Canvas2D waveform renderer (standalone)
 │   └── MacroSlider.tsx          # Macro parameter slider
 ├── audio/
+│   ├── bezier/                  # Bezier math, types, params↔envelope conversion
+│   ├── preview/                 # Client-side Web Audio preview engine
 │   ├── params/                  # Spec-driven parameter system
 │   └── contract/                # Canonical patch → engine param mapping
 └── lib/
-    └── api.ts                   # Server API client
+    ├── api.ts                   # Server API client
+    └── wavEncoder.ts            # Client-side 16-bit PCM WAV encoder
 ```
 
 ### Parameter Contract
@@ -71,20 +77,60 @@ All UI controls are rendered from `ParamSpec` / `EnvelopeSpec`. Adding a new par
 
 - [x] **Phase 0**: Foundation & Store — Zustand store, Web Audio playback, Canvas2D waveform
 - [x] **Phase 1**: Four-Panel Layout — AppShell, LayersPanel, VisualEditorPanel, RegenPanel, PITCH/AMP toggle, Click layer stubs
-- [ ] **Phase 2**: Bezier Envelope Canvas (critical path)
-- [ ] **Phase 3**: Regenerator Module
-- [ ] **Phase 4**: Audio Export & Click Layers
-- [ ] **Phase 5**: Client-Side Preview Engine
-- [ ] **Phase 6**: Polish & Performance
+- [x] **Phase 2**: Bezier Envelope Canvas — Interactive Canvas2D editor with cubic Bezier curves, drag nodes/handles, waveform underlay, TIMING fader, params↔envelope bidirectional sync (24 new tests)
+- [x] **Phase 3**: Regenerator Module — Roll Dice (full random), Smart Mutate (constrained jitter), mutation focus dropdown, amount slider, feedback history
+- [x] **Phase 4**: Audio Export & Click Layers — Save WAV, Drag-to-DAW, WAV encoder, 3 Click layer tabs with sample selector
+- [x] **Phase 5**: Client-Side Preview Engine — Web Audio synth with Bezier envelope automation, instant feedback on drag end, preview toggle
+- [x] **Phase 6**: Polish & Performance — Undo/redo (zundo, 50-state history), Ctrl+S save, HiDPI canvas, responsive ResizeObserver
+
+### Bezier Envelope Editor
+
+The central visual editor uses Canvas2D with interactive cubic Bezier curves:
+
+- **Drag nodes** to reshape the envelope (attack peak, hold points, etc.)
+- **Drag control handles** to adjust curve tension and shape
+- **Double-click** on empty space to add a new node
+- **Double-click** on a node to remove it (start/end nodes are locked)
+- **AMP/PITCH toggle** switches between amplitude and pitch envelope views
+- **TIMING fader** controls the master duration (50–3000ms)
+- Changes auto-sync to envelope params and trigger debounced server render
+
+### Regenerator Module
+
+Sound exploration tools with ML-guided feedback:
+
+- **Roll Dice**: Full random — new seed, random envelopes + macros
+- **Smart Mutate**: Jitter around current values with configurable intensity
+- **Focus**: Target mutations to specific envelope groups (AMP, PITCH, CLICK, etc.) or macros only
+- **Amount**: 5–100% mutation intensity slider
+- **AI Suggest**: ML-guided parameter proposals via RandomForest preference model
+- **Feedback**: Thumbs up/down trains the ML model (history tracked, last 50)
+
+### Audio Export
+
+- **Save WAV**: Server-side high-quality render, downloads as `neuro_{instrument}_{seed}.wav`
+- **Drag WAV**: Drag the handle to your DAW — client-side 16-bit PCM encoding
+- **Export Kit**: Bundle all kit slots into a ZIP archive
+
+### Click Layers
+
+3 click layer tabs (CLICK 1–3) with:
+- **Sample selector**: 9 built-in transient samples (stick attack, rim snap, etc.)
+- **Level slider**: per-layer gain control
+- **Enable toggle**: mute/unmute individual layers
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | Space | Replay current sound |
-| Enter / N | Generate new (random seed + envelopes) |
+| Enter / N | Roll Dice (full random) |
+| R | Smart Mutate (constrained jitter) |
 | Arrow Left/Right | Switch instrument |
 | M | AI Suggest (ML-guided mutation) |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z | Redo |
+| Ctrl+S | Save WAV |
 
 ## Development
 

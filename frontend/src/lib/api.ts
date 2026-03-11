@@ -53,3 +53,27 @@ export async function exportKit(kitData: any): Promise<Blob> {
     if (!res.ok) throw new Error("Export failed");
     return res.blob();
 }
+
+/**
+ * Request a high-quality WAV render from the server.
+ * Same params as generateAudio but with quality: "high" flag.
+ */
+export async function renderHighQuality(
+    instrument: InstrumentType,
+    params: Record<string, any>,
+    seed: number
+): Promise<Blob> {
+    const response = await fetch(`${API_BASE}/generate/${instrument}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ...params,
+            seed,
+            quality: "high",
+        }),
+    });
+    if (!response.ok) {
+        throw new Error(`High-quality render failed: ${response.statusText}`);
+    }
+    return response.blob();
+}
