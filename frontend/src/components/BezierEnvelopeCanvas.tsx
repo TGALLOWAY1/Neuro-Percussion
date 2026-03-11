@@ -39,6 +39,7 @@ interface BezierEnvelopeCanvasProps {
   audioBuffer: AudioBuffer | null;
   envelope: BezierEnvelope;
   onEnvelopeChange: (envelope: BezierEnvelope) => void;
+  onDragEnd?: () => void;
   height?: number;
   mode?: "AMP" | "PITCH";
 }
@@ -47,6 +48,7 @@ export const BezierEnvelopeCanvas: React.FC<BezierEnvelopeCanvasProps> = ({
   audioBuffer,
   envelope,
   onEnvelopeChange,
+  onDragEnd,
   height = 256,
   mode = "AMP",
 }) => {
@@ -444,11 +446,14 @@ export const BezierEnvelopeCanvas: React.FC<BezierEnvelopeCanvasProps> = ({
   );
 
   const handleMouseUp = useCallback(() => {
-    setDragTarget(null);
+    if (dragTarget) {
+      setDragTarget(null);
+      onDragEnd?.();
+    }
     if (canvasRef.current) {
       canvasRef.current.style.cursor = "default";
     }
-  }, []);
+  }, [dragTarget, onDragEnd]);
 
   const handleMouseLeave = useCallback(() => {
     setDragTarget(null);
