@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import { DrumParamSpec, EnvelopeSpec } from "@/audio/params/types";
-import { EnvelopePanel } from "./EnvelopePanel";
-import clsx from "clsx";
+import React from "react";
+import { DrumParamSpec } from "@/audio/params/types";
+import { InteractiveEnvelopeGraph } from "./InteractiveEnvelopeGraph";
+
+/** Color per envelope id */
+const ENVELOPE_COLORS: Record<string, string> = {
+    amp: "#10B981",     // emerald
+    pitch: "#F59E0B",   // amber
+    click: "#3B82F6",   // blue
+    body: "#F59E0B",    // amber
+    noise: "#8B5CF6",   // violet
+    snap: "#EF4444",    // red
+    metal: "#F59E0B",   // amber
+    stereo: "#06B6D4",  // cyan
+};
 
 interface EnvelopeStripProps {
     spec: DrumParamSpec;
@@ -18,57 +29,24 @@ export const EnvelopeStrip: React.FC<EnvelopeStripProps> = ({
     onChange,
     onReset,
 }) => {
-    const [activeEnvelope, setActiveEnvelope] = useState<string>(spec.envelopes[0]?.id || "");
+    // Show all envelopes that have a graph (mode !== "NONE") simultaneously
+    const graphEnvelopes = spec.envelopes.filter((e) => e.mode !== "NONE");
 
-    const currentEnvelope = spec.envelopes.find((e) => e.id === activeEnvelope);
-
-    // Extract values for current envelope
-    const envelopeValues: Record<string, number> = {};
-    if (currentEnvelope) {
-        currentEnvelope.params.forEach((param) => {
-            envelopeValues[param.id] = values[param.id] ?? param.default;
-        });
-    }
-
-    const handleEnvelopeChange = (paramId: string, value: number) => {
-        onChange(paramId, value);
-    };
-
-    const handleReset = () => {
-        if (currentEnvelope && onReset) {
-            onReset(currentEnvelope.id);
-        }
-    };
+    if (graphEnvelopes.length === 0) return null;
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Segmented control for envelope selection */}
-            <div className="flex bg-neutral-900 rounded-lg p-1 gap-1 overflow-x-auto">
-                {spec.envelopes.map((env) => (
-                    <button
-                        key={env.id}
-                        onClick={() => setActiveEnvelope(env.id)}
-                        className={clsx(
-                            "px-3 py-1.5 text-xs font-semibold rounded-md uppercase tracking-wider transition-all whitespace-nowrap",
-                            activeEnvelope === env.id
-                                ? "bg-emerald-600 text-white shadow-lg"
-                                : "text-neutral-500 hover:text-neutral-300"
-                        )}
-                    >
-                        {env.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* Active envelope panel */}
-            {currentEnvelope && (
-                <EnvelopePanel
-                    spec={currentEnvelope}
-                    values={envelopeValues}
-                    onChange={handleEnvelopeChange}
-                    onReset={handleReset}
+            {graphEnvelopes.map((env) => (
+                <InteractiveEnvelopeGraph
+                    key={env.id}
+                    spec={env}
+                    values={values}
+                    onChange={onChange}
+                    onReset={onReset ? () => onReset(env.id) : undefined}
+                    color={ENVELOPE_COLORS[env.id] ?? "#10B981"}
+                    height={160}
                 />
-            )}
+            ))}
         </div>
     );
 };
