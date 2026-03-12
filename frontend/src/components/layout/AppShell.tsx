@@ -1,38 +1,43 @@
 /**
- * Four-panel layout shell (Phase 1).
+ * VST-style layout shell.
  *
  * Layout:
- * ┌─────────────────────────────────────────────┐
- * │  TopNav (instrument tabs + title)            │
- * ├──────────────┬──────────────────────────────┤
- * │  LayersPanel │  VisualEditor (waveform +    │
- * │  (SUB/CLICK  │   envelope graph area)       │
- * │   tabs +     │                              │
- * │   params)    ├──────────────────────────────┤
- * │              │  RegenPanel (generate/kit/   │
- * │              │   feedback/macros)           │
- * ├──────────────┴──────────────────────────────┤
- * └─────────────────────────────────────────────┘
+ * ┌───────────────────────────────────────────────┐
+ * │  TopNav (instrument tabs + title)              │
+ * ├──────────────────────┬────────────────────────┤
+ * │  AMP Bezier Canvas   │  PITCH Bezier Canvas   │
+ * │  (waveform overlay)  │  (envelope curve)      │
+ * ├──────────────────────┴────────────────────────┤
+ * │ ┌──CLICK──┐ ┌──OUTPUT──┐ ┌──ROOM──────────┐  │
+ * │ │ (o)(o)  │ │ (o)(o)   │ │ (o)(o)(o)(o)   │  │
+ * │ └─────────┘ └──────────┘ └────────────────┘  │
+ * ├───────────────────────────────────────────────┤
+ * │  [Roll] [Mutate] [▶] [✨]   [👍👎] [Export]  │
+ * │  Kit: kick ✓  snare —  hat —                  │
+ * └───────────────────────────────────────────────┘
  */
 
 "use client";
 
 import React from "react";
 import { TopNav } from "../panels/TopNav";
-import { LayersPanel } from "../panels/LayersPanel";
-import { VisualEditorPanel } from "../panels/VisualEditorPanel";
-import { RegenPanel } from "../panels/RegenPanel";
+import { VSTEnvelopeStrip } from "../VSTEnvelopeStrip";
+import { VSTParamSections } from "../VSTParamSections";
+import { VSTActionBar } from "../VSTActionBar";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { ErrorToast } from "../ErrorToast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { RefreshCw } from "lucide-react";
+import { usePercussionStore } from "@/store/usePercussionStore";
 
 export const AppShell: React.FC = () => {
   useKeyboardShortcuts();
+  const isLoading = usePercussionStore((s) => s.isLoading);
 
   return (
     <ErrorBoundary>
       <div className="flex flex-col h-screen max-h-screen bg-black text-neutral-200 overflow-hidden">
-        {/* Skip link for keyboard users */}
+        {/* Skip link */}
         <a
           href="#main-editor"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-emerald-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:top-2 focus:left-2"
@@ -40,34 +45,31 @@ export const AppShell: React.FC = () => {
           Skip to editor
         </a>
 
-        {/* Top Nav */}
+        {/* Header */}
         <TopNav />
 
-        {/* Main Content */}
-        <div className="flex flex-1 min-h-0">
-          {/* Left: Layers Panel */}
-          <aside
-            className="w-72 flex-shrink-0 border-r border-neutral-800 overflow-y-auto"
-            aria-label="Layer parameters"
-          >
-            <LayersPanel />
-          </aside>
+        {/* Main scrollable content */}
+        <main
+          id="main-editor"
+          className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-4"
+        >
+          {/* Envelope canvases (AMP + PITCH side by side) */}
+          <div className="relative">
+            <VSTEnvelopeStrip />
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg pointer-events-none">
+                <RefreshCw className="animate-spin text-emerald-500" size={24} />
+              </div>
+            )}
+          </div>
 
-          {/* Right: Visual Editor + Regen */}
-          <main id="main-editor" className="flex-1 flex flex-col min-w-0">
-            {/* Visual Editor (waveform + envelope) */}
-            <div className="flex-1 min-h-0 p-4">
-              <VisualEditorPanel />
-            </div>
+          {/* Parameter section panels with knobs */}
+          <VSTParamSections />
+        </main>
 
-            {/* Bottom: Regen Panel */}
-            <div className="flex-shrink-0 border-t border-neutral-800">
-              <RegenPanel />
-            </div>
-          </main>
-        </div>
+        {/* Action bar */}
+        <VSTActionBar />
 
-        {/* Error toast for API/store errors */}
         <ErrorToast />
       </div>
     </ErrorBoundary>
